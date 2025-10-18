@@ -69,6 +69,7 @@ def get_user_context(user_id: str) -> dict:
 
 def add_task(
         user_id: str,
+        title: str,
         context: dict,
         type_: str,
         period: str = "1 HOUR"
@@ -76,6 +77,7 @@ def add_task(
     """Adds a new task for the user with the given context and period."""
     response = sb.table("tasks")\
         .insert({
+            "title": title,
             "user_id": user_id,
             "context": context,
             "type": type_,
