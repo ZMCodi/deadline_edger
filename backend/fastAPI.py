@@ -53,6 +53,13 @@ def get_tasks(
         ) for task in user_tasks
     ]
 
+@app.get("/api/tasks")
+def get_tasks(
+    user_id: str = Depends(sb.authenticate_user)
+):
+    """Retrieves all tasks for the authenticated user."""
+    return sb.get_tasks(user_id)
+
 @app.post("/api/cron/run-tasks")
 def run_scheduled_tasks(tasks = Body(...)):
     """Endpoint to be called by a cron job to run scheduled tasks."""
