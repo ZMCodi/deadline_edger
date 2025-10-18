@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { AuthModal } from '@/components/auth/AuthModal'
 import { UserMenu } from '@/components/auth/UserMenu'
+import { GoogleConnect } from '@/components/google/GoogleConnect'
 import { Button } from '@/components/ui/button'
 
 export default function Home() {
@@ -49,9 +50,9 @@ export default function Home() {
               Welcome to Deadline Edger
             </h2>
             {user ? (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <p className="text-lg text-gray-600">
-                  Hello, {user.email}! You re successfully signed in.
+                  Hello, {user.email}! You're successfully signed in.
                 </p>
                 <div className="bg-white shadow rounded-lg p-6 max-w-md mx-auto">
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -63,6 +64,9 @@ export default function Home() {
                   <p className="text-sm text-gray-600">
                     User ID: {user.id}
                   </p>
+                </div>
+                <div className="flex justify-center">
+                  <GoogleConnect />
                 </div>
               </div>
             ) : (
