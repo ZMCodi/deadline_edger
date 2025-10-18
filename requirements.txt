@@ -24,7 +24,7 @@ markdown-it-py==4.0.0
 MarkupSafe==3.0.3
 mdurl==0.1.2
 multidict==6.7.0
-packaging==25.0
+packaging==24.2
 postgrest==2.22.0
 propcache==0.4.1
 pycparser==2.23
@@ -57,3 +57,5 @@ uvloop==0.22.1
 watchfiles==1.1.1
 websockets==15.0.1
 yarl==1.22.0
+firecrawl-py==1.7.1
+ai-sdk-python==0.1.0
