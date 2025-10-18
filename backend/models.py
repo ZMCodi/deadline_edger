@@ -44,3 +44,9 @@ class UserToken(BaseModel):
     scope: str = Field(description="Scope of the token")
     token_type: str = Field(description="Type of the token")
     expiry_date: str = Field(description="Expiry date of the token")
+
+class UserOnboarding(BaseModel):
+    context: dict = Field(description="User context data")
+    preferences: List[str] = Field(description="User preferences")
+    calendar_url: str = Field(description="URL of the user's calendar")
+    google_token: dict = Field(description="Google token information")

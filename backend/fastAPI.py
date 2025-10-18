@@ -1,7 +1,7 @@
 from fastapi import Body, Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware # To allow frontend to connect
 from collections import defaultdict
-from models import Task, TaskResponse, Context, UserToken
+from models import Task, TaskResponse, Context, UserToken, UserOnboarding
 
 import database.supabase_db as sb
 
@@ -61,6 +61,21 @@ def add_user_token(
 ):
     """Adds a token for the authenticated user."""
     sb.set_user_token(user_id, token.model_dump(mode="json"))
+
+@app.post("/api/users/onboard")
+def onboard_user(
+    onboarding_data: UserOnboarding,
+    user_id: str = Depends(sb.authenticate_user)
+):
+    """Onboards a new user with context, preferences, calendar URL, and Google token."""
+    sb.add_user(
+        user_id=user_id,
+        context=onboarding_data.context,
+        preferences=onboarding_data.preferences,
+        calendar_url=onboarding_data.calendar_url
+    )
+
+    sb.set_user_token(user_id, onboarding_data.google_token)
 
 @app.post("/api/cron/run-tasks")
 def run_scheduled_tasks(tasks = Body(...)):
