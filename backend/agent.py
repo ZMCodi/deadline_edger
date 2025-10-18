@@ -51,6 +51,10 @@ def create_agent():
     if not os.getenv("OPENROUTER_API_KEY"):
         raise ValueError("OPENROUTER_API_KEY not found in environment variables")
     
+    # Set OpenRouter as default for all OpenAI calls
+    os.environ["OPENAI_BASE_URL"] = "https://openrouter.ai/api/v1"
+    os.environ["OPENAI_API_KEY"] = os.getenv("OPENROUTER_API_KEY")
+    
     return openai
 
 
