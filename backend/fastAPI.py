@@ -1,7 +1,7 @@
 from fastapi import Body, Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware # To allow frontend to connect
 from collections import defaultdict
-from models import Task, TaskResponse
+from models import Task, TaskResponse, Context
 
 import database.supabase_db as sb
 
@@ -23,10 +23,11 @@ def create_task(
 ):
     """Creates a new task for the authenticated user."""
     added_task = sb.add_task(
+        title=task.title,
         user_id=user_id,
-        type_=task._type.value,
-        context=task.context,
-        period=f"{task.period.total_seconds()} seconds"
+        type_=task.type_.value,
+        context=task.context.model_dump(mode="json"),
+        period=task.period
     )
 
     context = sb.get_user_context(user_id)
@@ -44,10 +45,10 @@ def get_tasks(
     user_tasks = sb.get_tasks(user_id)
     return [
         TaskResponse(
-            _id=task["id"],
-            _type=task["type"],
+            id_=task["id"],
+            type_=task["type"],
             title=task["title"],
-            context=task["context"],
+            context=Context(**task["context"]),
             period=task["period"],
             last_run_ts=task["last_run_ts"]
         ) for task in user_tasks
