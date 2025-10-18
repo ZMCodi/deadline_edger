@@ -23,6 +23,8 @@ interface GoogleAuthContextType {
   tokens: GoogleTokens | null
   isConnected: boolean
   isLoading: boolean
+  error: string | null
+  isGoogleLoaded: boolean
   signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
   hasScope: (scope: string) => boolean
@@ -31,6 +33,8 @@ interface GoogleAuthContextType {
 const GoogleAuthContext = createContext<GoogleAuthContextType | undefined>(undefined)
 
 const SCOPES = [
+  'https://www.googleapis.com/auth/userinfo.email',
+  'https://www.googleapis.com/auth/userinfo.profile',
   'https://www.googleapis.com/auth/gmail.readonly',
   'https://www.googleapis.com/auth/calendar.readonly',
   'https://www.googleapis.com/auth/calendar.events'
@@ -41,17 +45,20 @@ export function GoogleAuthProvider({ children }: { children: React.ReactNode }) 
   const [tokens, setTokens] = useState<GoogleTokens | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const initGoogle = async () => {
       try {
         await loadGoogleAPI()
+        
         if (window.gapi) {
           await initializeGoogleClient()
         }
+        
         setIsGoogleLoaded(true)
       } catch (error) {
-        console.error('Error loading Google APIs:', error)
+        setError(`Failed to load Google APIs: ${error}`)
       }
     }
 
@@ -70,7 +77,6 @@ export function GoogleAuthProvider({ children }: { children: React.ReactNode }) 
           localStorage.removeItem('google_tokens')
         }
       } catch (error) {
-        console.error('Error loading saved tokens:', error)
         localStorage.removeItem('google_tokens')
       }
     }
@@ -80,7 +86,8 @@ export function GoogleAuthProvider({ children }: { children: React.ReactNode }) 
     try {
       const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
         headers: {
-          Authorization: `Bearer ${accessToken}`
+          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/json'
         }
       })
       
@@ -89,35 +96,73 @@ export function GoogleAuthProvider({ children }: { children: React.ReactNode }) 
         setUser({
           id: userInfo.id,
           email: userInfo.email,
-          name: userInfo.name,
-          picture: userInfo.picture
+          name: userInfo.name || userInfo.email,
+          picture: userInfo.picture || ''
         })
+      } else {
+        await loadUserInfoAlternative(accessToken)
       }
     } catch (error) {
-      console.error('Error loading user info:', error)
+      await loadUserInfoAlternative(accessToken)
+    }
+  }
+
+  const loadUserInfoAlternative = async (accessToken: string) => {
+    try {
+      if (window.gapi?.client) {
+        const response = await window.gapi.client.request({
+          path: 'https://www.googleapis.com/oauth2/v2/userinfo',
+          method: 'GET'
+        })
+        
+        if (response.body) {
+          const userInfo = JSON.parse(response.body)
+          setUser({
+            id: userInfo.id,
+            email: userInfo.email,
+            name: userInfo.name || userInfo.email,
+            picture: userInfo.picture || ''
+          })
+        }
+      }
+    } catch (error) {
+      // Fallback: create minimal user object
+      setUser({
+        id: 'unknown',
+        email: 'user@gmail.com',
+        name: 'Google User',
+        picture: ''
+      })
     }
   }
 
   const signInWithGoogle = async () => {
+    setError(null)
+    
     if (!isGoogleLoaded || !window.google) {
-      console.error('Google APIs not loaded')
+      const errorMsg = 'Google APIs not loaded yet'
+      setError(errorMsg)
       return
     }
 
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+    
     if (!clientId) {
-      console.error('Google Client ID not configured')
+      const errorMsg = 'Google Client ID not configured'
+      setError(errorMsg)
       return
     }
 
     setIsLoading(true)
+    
     try {
       const tokenClient = window.google.accounts.oauth2.initTokenClient({
         client_id: clientId,
         scope: SCOPES,
         callback: async (tokenResponse: any) => {
           if (tokenResponse.error) {
-            console.error('Google OAuth error:', tokenResponse.error)
+            const errorMsg = `OAuth error: ${tokenResponse.error}`
+            setError(errorMsg)
             setIsLoading(false)
             return
           }
@@ -137,14 +182,16 @@ export function GoogleAuthProvider({ children }: { children: React.ReactNode }) 
           setIsLoading(false)
         },
         error_callback: (error: any) => {
-          console.error('Google OAuth error:', error)
+          const errorMsg = `OAuth error: ${error}`
+          setError(errorMsg)
           setIsLoading(false)
         }
       })
 
       tokenClient.requestAccessToken()
     } catch (error) {
-      console.error('Google sign in error:', error)
+      const errorMsg = `Sign in error: ${error}`
+      setError(errorMsg)
       setIsLoading(false)
     }
   }
@@ -173,6 +220,8 @@ export function GoogleAuthProvider({ children }: { children: React.ReactNode }) 
     tokens,
     isConnected: !!tokens && !!user,
     isLoading,
+    error,
+    isGoogleLoaded,
     signInWithGoogle,
     signOut,
     hasScope

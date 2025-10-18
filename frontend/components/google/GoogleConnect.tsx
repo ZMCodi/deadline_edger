@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Mail, Calendar, AlertCircle, CheckCircle } from 'lucide-react'
 
 export function GoogleConnect() {
-  const { user, isConnected, isLoading, signInWithGoogle, signOut, hasScope } = useGoogleAuth()
+  const { user, isConnected, isLoading, error, isGoogleLoaded, signInWithGoogle, signOut, hasScope } = useGoogleAuth()
 
   const scopeStatus = [
     {
@@ -110,12 +110,25 @@ export function GoogleConnect() {
           })}
         </div>
 
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-md p-3">
+            <p className="text-red-800 text-sm font-medium">Error:</p>
+            <p className="text-red-700 text-sm">{error}</p>
+          </div>
+        )}
+
+        {!isGoogleLoaded && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+            <p className="text-yellow-800 text-sm">Loading Google APIs...</p>
+          </div>
+        )}
+
         <Button 
           onClick={signInWithGoogle} 
-          disabled={isLoading}
+          disabled={isLoading || !isGoogleLoaded}
           className="w-full"
         >
-          {isLoading ? 'Connecting...' : 'Connect Google Account'}
+          {isLoading ? 'Connecting...' : !isGoogleLoaded ? 'Loading...' : 'Connect Google Account'}
         </Button>
       </CardContent>
     </Card>
