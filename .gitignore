@@ -6,3 +6,5 @@ __pycache__
 credentials-sheets.json
 token.json
 
+.vscode
+credentials-sheets.json

@@ -12,7 +12,7 @@ security = HTTPBearer(auto_error=False)
 print("Connecting to Supabase...")
 sb = create_client(
     supabase_url=os.getenv("SUPABASE_URL"),
-    supabase_key=os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    supabase_key=os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
 )
 print("Connected to Supabase. (if this prints more than once, you're cooked)")
 
@@ -43,6 +43,16 @@ def add_user(
             "calendar_url": calendar_url
         }).execute()
     
+def set_user_token(
+        user_id: str,
+        token: dict
+):
+    """Sets the token for a given user."""
+    sb.table("users")\
+        .update({"token": token})\
+        .eq("id", user_id)\
+        .execute()
+
 def set_user_context(
         user_id: str,
         context: dict
@@ -56,7 +66,7 @@ def set_user_context(
 def get_user_context(user_id: str) -> dict:
     """Retrieves the context for a given user."""
     response = sb.table("users")\
-        .select("context, preferences, calendar_url")\
+        .select("context, preferences, calendar_url, google_token")\
         .eq("id", user_id)\
         .single()\
         .execute()
@@ -64,24 +74,29 @@ def get_user_context(user_id: str) -> dict:
     return {
         "context": response.data.get("context", {}),
         "preferences": response.data.get("preferences", []),
-        "calendar_url": response.data.get("calendar_url", "")
+        "calendar_url": response.data.get("calendar_url", ""),
+        "google_token": response.data.get("google_token", {})
     } if response.data else {}
 
 def add_task(
         user_id: str,
+        title: str,
         context: dict,
         type_: str,
         period: str = "1 HOUR"
 ):
     """Adds a new task for the user with the given context and period."""
-    sb.table("tasks")\
+    response = sb.table("tasks")\
         .insert({
+            "title": title,
             "user_id": user_id,
             "context": context,
             "type": type_,
             "period": period,
             "last_run_ts": "now()"
         }).execute()
+    
+    return response.data[0] if response.data else None
     
 def get_tasks(user_id: str) -> list[dict]:
     """Retrieves all tasks for a given user."""
