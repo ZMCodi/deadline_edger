@@ -74,7 +74,7 @@ def add_task(
         period: str = "1 HOUR"
 ):
     """Adds a new task for the user with the given context and period."""
-    sb.table("tasks")\
+    response = sb.table("tasks")\
         .insert({
             "user_id": user_id,
             "context": context,
@@ -82,6 +82,8 @@ def add_task(
             "period": period,
             "last_run_ts": "now()"
         }).execute()
+    
+    return response.data[0] if response.data else None
     
 def get_tasks(user_id: str) -> list[dict]:
     """Retrieves all tasks for a given user."""

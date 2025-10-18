@@ -19,14 +19,21 @@ class Context(BaseModel):
     priority: str = Field(description="Priority of the user's task, high, medium, low")
     url: Optional[str] = Field(description="URL of the task to be executed")
 
-class AgentResponse(BaseModel):
-    _type: ChatTaskType
-    text: str = Field(description="Explanation of the task to be created")
-    tasks: Optional[List[Task]] = Field(description="List of tasks to be created")
-
-
 class Task(BaseModel):
     context: Context = Field(description="Information about what the task will do")
     period: timedelta = Field(description="How often the task will be run, e.g. 1 hour, 1 day, 1 week")
     _type: TaskType = Field(description="Type of task to be created")
     title: str = Field(description="Title of the task to be executed")
+
+class AgentResponse(BaseModel):
+    _type: ChatTaskType
+    text: str = Field(description="Explanation of the task to be created")
+    tasks: Optional[List[Task]] = Field(description="List of tasks to be created")
+
+class TaskResponse(BaseModel):
+    _id: str = Field(description="Unique identifier for the task")
+    _type: TaskType = Field(description="Type of the task")
+    title: str = Field(description="Title of the task")
+    context: Context = Field(description="Context of the task")
+    period: str = Field(description="Period of the task in seconds")
+    last_run_ts: str = Field(description="Timestamp of the last run of the task")
