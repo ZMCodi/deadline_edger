@@ -1,7 +1,7 @@
 import asyncio
 from pydantic import BaseModel
 from typing import Optional, Dict, List, Any
-from fastapi import Body, FastAPI, HTTPException, Query
+from fastapi import Body, Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware # To allow frontend to connect
 from collections import defaultdict
 
@@ -20,17 +20,27 @@ app.add_middleware(
 
 #pydantic models define the structure of the JSON that the API will return.
 
-class Template(BaseModel):
-    id: int # the node address
-    todos: List[str]
-    lat: float
-    status: str
-
 #api endpoints
 
-@app.get("/api/nodes/latest", response_model=Template)
-def get_latest_nodes():
-    pass
+@app.post("/api/task/create")
+def create_task(
+    user_id: str = Depends(sb.authenticate_user),
+    task: dict = Body(...)
+):
+    """Creates a new task for the authenticated user."""
+    sb.add_task(
+        user_id=user_id,
+        type_=task.get("type_", "TODO"),
+        context=task.get("context", {}),
+        period=task.get("period", None)
+    )
+
+    context = sb.get_user_context(user_id)
+    chats = sb.get_chat_messages(user_id)
+
+    # run_task(user_id, task, context, chats)
+
+    sb.mark_tasks_ran([task.get("id")])
 
 @app.post("/api/cron/run-tasks")
 def run_scheduled_tasks(tasks = Body(...)):
