@@ -49,4 +49,4 @@ class UserOnboarding(BaseModel):
     context: dict = Field(description="User context data")
     preferences: List[str] = Field(description="User preferences")
     calendar_url: str = Field(description="URL of the user's calendar")
-    google_token: dict = Field(description="Google token information")
+    google_token: Optional[dict] = Field(None, description="Google token information")

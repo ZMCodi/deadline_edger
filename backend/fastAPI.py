@@ -75,7 +75,8 @@ def onboard_user(
         calendar_url=onboarding_data.calendar_url
     )
 
-    sb.set_user_token(user_id, onboarding_data.google_token)
+    if onboarding_data.google_token:
+        sb.set_user_token(user_id, onboarding_data.google_token)
 
 @app.post("/api/cron/run-tasks")
 def run_scheduled_tasks(tasks = Body(...)):
