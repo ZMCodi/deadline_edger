@@ -1,5 +1,4 @@
 import asyncio
-<<<<<<< HEAD
 import os
 from pydantic import BaseModel
 from typing import Optional, Dict, List, Any
@@ -13,15 +12,6 @@ from models import AgentResponse
 from agent import scrape_webpage_tool
 
 load_dotenv()
-=======
-from pydantic import BaseModel
-from typing import Optional, Dict, List, Any
-from fastapi import Body, FastAPI, HTTPException, Query
-from fastapi.middleware.cors import CORSMiddleware # To allow frontend to connect
-from collections import defaultdict
-
-import database.supabase_db as sb
->>>>>>> 6dcb920 (add process task endpoint)
 
 app = FastAPI()
 
