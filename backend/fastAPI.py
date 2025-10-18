@@ -80,7 +80,6 @@ async def chat_with_agent(request: ChatRequest):
     system_prompt = """You are a helpful AI assistant that can help with tasks and questions.
 
 Your capabilities:
-- You have access to a scrape_webpage tool to get content from URLs
 - You can create, run, and manage tasks for users
 - You can reshuffle calendars and schedules
 
@@ -91,10 +90,8 @@ When the user asks for:
 4. General questions: Set type_ to "no_task" and provide helpful text
 
 Important:
-- Always ask for confirmation before creating tasks
-- When creating tasks, include all necessary details (context, period, type_, title)
-- If the user mentions a URL, use the scrape_webpage tool first
-- Be clear and concise in your explanations"""
+- Be clear and concise in your explanations for reusability later.
+"""
 
     model = openai("google/gemini-2.5-flash")
     
