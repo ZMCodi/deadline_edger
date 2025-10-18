@@ -95,12 +95,15 @@ def run_scheduled_tasks(tasks = Body(...)):
         print(f" - Chat history: {chats}")
 
         ids = []
-        for task in tasks:
-            print(f" - Task: {task}")
-            ids.append(task.get("id"))
+        run_tasks(tasks, user_id, context, chats, ids)
+        # for task in tasks:
+            # print(f" - Task: {task}")
+            # ids.append(task.get("id"))
 
-            # ADD YOUR TASK RUNNING LOGIC HERE
-            # run_task(user_id, task, context, chats)
+            # # ADD YOUR TASK RUNNING LOGIC HERE
+            # # run_task(user_id, task, context, chats)
+
+        calendar_data = 
 
         # mark them as ran
         sb.mark_tasks_ran(ids)

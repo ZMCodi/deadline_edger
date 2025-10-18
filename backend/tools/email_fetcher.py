@@ -1,8 +1,15 @@
-import ezgmail
+import ezgmail, json
+
+import database.supabase_db as sb
 
 # dates must be in yyyy/mm/dd format
 def mail_fetch(start_date=False):
     all_emails_list = []
+
+    data = sb.get_user_context("eb42a4e4-ddcd-40f7-abaa-5e2837fcf451")["google_token"]
+    with open("token.json", 'w') as f:
+        json.dump(data, f, indent=4)
+
 
     if start_date:
         threads = ezgmail.search(f"after:{start_date}", maxResults=10)
