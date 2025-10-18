@@ -37,3 +37,10 @@ class TaskResponse(BaseModel):
     context: Context = Field(description="Context of the task")
     period: str = Field(description="Period of the task in seconds")
     last_run_ts: str = Field(description="Timestamp of the last run of the task")
+
+class UserToken(BaseModel):
+    access_token: str = Field(description="Access token for the user")
+    refresh_token: str = Field(description="Refresh token for the user")
+    scope: str = Field(description="Scope of the token")
+    token_type: str = Field(description="Type of the token")
+    expiry_date: str = Field(description="Expiry date of the token")

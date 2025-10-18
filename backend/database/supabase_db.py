@@ -43,6 +43,16 @@ def add_user(
             "calendar_url": calendar_url
         }).execute()
     
+def set_user_token(
+        user_id: str,
+        token: dict
+):
+    """Sets the token for a given user."""
+    sb.table("users")\
+        .update({"token": token})\
+        .eq("id", user_id)\
+        .execute()
+
 def set_user_context(
         user_id: str,
         context: dict
