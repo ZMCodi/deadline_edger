@@ -56,12 +56,16 @@ def set_user_context(
 def get_user_context(user_id: str) -> dict:
     """Retrieves the context for a given user."""
     response = sb.table("users")\
-        .select("context")\
+        .select("context, preferences, calendar_url")\
         .eq("id", user_id)\
         .single()\
         .execute()
 
-    return response.data["context"] if response.data else {}
+    return {
+        "context": response.data.get("context", {}),
+        "preferences": response.data.get("preferences", []),
+        "calendar_url": response.data.get("calendar_url", "")
+    } if response.data else {}
 
 def add_task(
         user_id: str,
@@ -74,7 +78,7 @@ def add_task(
             "user_id": user_id,
             "context": context,
             "period": period,
-            "timestamp": "now()"
+            "last_run_ts": "now()"
         }).execute()
     
 def get_tasks(user_id: str) -> list[dict]:
