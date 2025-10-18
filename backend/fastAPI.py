@@ -2,9 +2,10 @@ import asyncio
 import os
 from pydantic import BaseModel
 from typing import Optional, Dict, List, Any
-from fastapi import Body, FastAPI, HTTPException, Query
+from fastapi import Body, FastAPI, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from collections import defaultdict
+from models import Task, TaskResponse, Context, UserToken, UserOnboarding
 from ai_sdk import generate_object, openai
 from dotenv import load_dotenv
 import database.supabase_db as sb
