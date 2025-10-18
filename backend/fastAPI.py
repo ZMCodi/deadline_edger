@@ -62,6 +62,17 @@ def add_user_token(
     """Adds a token for the authenticated user."""
     sb.set_user_token(user_id, token.model_dump(mode="json"))
 
+@app.get("/api/users/onboard")
+def get_whether_user_onboarded(
+    user_id: str = Depends(sb.authenticate_user)
+):
+    """Checks if the user is onboarded by retrieving their context."""
+    try:
+        sb.get_user_context(user_id)
+        return True
+    except Exception as e:
+        return False
+
 @app.post("/api/users/onboard")
 def onboard_user(
     onboarding_data: UserOnboarding,
