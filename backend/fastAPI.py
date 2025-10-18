@@ -1,11 +1,17 @@
 import asyncio
+import os
 from pydantic import BaseModel
 from typing import Optional, Dict, List, Any
 from fastapi import Body, FastAPI, HTTPException, Query
-from fastapi.middleware.cors import CORSMiddleware # To allow frontend to connect
+from fastapi.middleware.cors import CORSMiddleware
 from collections import defaultdict
-
+from ai_sdk import generate_object, openai
+from dotenv import load_dotenv
 import database.supabase_db as sb
+from models import AgentResponse
+from agent import scrape_webpage_tool
+
+load_dotenv()
 
 app = FastAPI()
 
@@ -58,3 +64,45 @@ def run_scheduled_tasks(tasks = Body(...)):
 
         # mark them as ran
         sb.mark_tasks_ran(ids)
+
+# Configure OpenRouter as default for all OpenAI calls
+os.environ["OPENAI_BASE_URL"] = "https://openrouter.ai/api/v1"
+os.environ["OPENAI_API_KEY"] = os.getenv("OPENROUTER_API_KEY")
+
+
+class ChatRequest(BaseModel):
+    message: str
+
+
+@app.post("/api/agent/chat", response_model=AgentResponse)
+async def chat_with_agent(request: ChatRequest):
+    
+    system_prompt = """You are a helpful AI assistant that can help with tasks and questions.
+
+Your capabilities:
+- You have access to a scrape_webpage tool to get content from URLs
+- You can create, run, and manage tasks for users
+- You can reshuffle calendars and schedules
+
+When the user asks for:
+1. Creating a task: Set type_ to "create_task" and populate the tasks list
+2. Running a task: Set type_ to "run_task" 
+3. Reshuffling calendar: Set type_ to "reshuffle_calendar"
+4. General questions: Set type_ to "no_task" and provide helpful text
+
+Important:
+- Always ask for confirmation before creating tasks
+- When creating tasks, include all necessary details (context, period, type_, title)
+- If the user mentions a URL, use the scrape_webpage tool first
+- Be clear and concise in your explanations"""
+
+    model = openai("google/gemini-2.5-flash")
+    
+    result = generate_object(
+        model=model,
+        schema=AgentResponse,
+        prompt=request.message,
+        system=system_prompt,
+    )
+    
+    return result.object
