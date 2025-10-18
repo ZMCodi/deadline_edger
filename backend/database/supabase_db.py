@@ -70,6 +70,7 @@ def get_user_context(user_id: str) -> dict:
 def add_task(
         user_id: str,
         context: dict,
+        type_: str,
         period: str = "1 HOUR"
 ):
     """Adds a new task for the user with the given context and period."""
@@ -77,6 +78,7 @@ def add_task(
         .insert({
             "user_id": user_id,
             "context": context,
+            "type": type_,
             "period": period,
             "last_run_ts": "now()"
         }).execute()
@@ -125,6 +127,15 @@ def add_task_log(
             "timestamp": "now()"
         }).execute()
     
+def mark_tasks_ran(
+        task_ids: list[int]
+):
+    """Updates the last_run_ts for the given task IDs to now."""
+    sb.table("tasks")\
+        .update({"last_run_ts": "now()"})\
+        .in_("id", task_ids)\
+        .execute()
+
 def add_chat_message(
         user_id: str,
         context: dict
