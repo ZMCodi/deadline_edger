@@ -42,6 +42,13 @@ def create_task(
 
     sb.mark_tasks_ran([task.get("id")])
 
+@app.get("/api/tasks")
+def get_tasks(
+    user_id: str = Depends(sb.authenticate_user)
+):
+    """Retrieves all tasks for the authenticated user."""
+    return sb.get_tasks(user_id)
+
 @app.post("/api/cron/run-tasks")
 def run_scheduled_tasks(tasks = Body(...)):
     print("Received tasks:", tasks['tasks'])
