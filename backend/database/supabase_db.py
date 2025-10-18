@@ -12,7 +12,7 @@ security = HTTPBearer(auto_error=False)
 print("Connecting to Supabase...")
 sb = create_client(
     supabase_url=os.getenv("SUPABASE_URL"),
-    supabase_key=os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    supabase_key=os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
 )
 print("Connected to Supabase. (if this prints more than once, you're cooked)")
 
