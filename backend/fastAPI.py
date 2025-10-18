@@ -1,9 +1,7 @@
-import asyncio
-from pydantic import BaseModel
-from typing import Optional, Dict, List, Any
 from fastapi import Body, Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware # To allow frontend to connect
 from collections import defaultdict
+from models import Task, TaskResponse
 
 import database.supabase_db as sb
 
@@ -18,21 +16,17 @@ app.add_middleware(
     allow_headers=["*"], 
 )
 
-#pydantic models define the structure of the JSON that the API will return.
-
-#api endpoints
-
 @app.post("/api/task/create")
 def create_task(
-    user_id: str = Depends(sb.authenticate_user),
-    task: dict = Body(...)
+    task: Task,
+    user_id: str = Depends(sb.authenticate_user)
 ):
     """Creates a new task for the authenticated user."""
-    sb.add_task(
+    added_task = sb.add_task(
         user_id=user_id,
-        type_=task.get("type_", "TODO"),
-        context=task.get("context", {}),
-        period=task.get("period", None)
+        type_=task._type.value,
+        context=task.context,
+        period=f"{task.period.total_seconds()} seconds"
     )
 
     context = sb.get_user_context(user_id)
@@ -40,17 +34,28 @@ def create_task(
 
     # run_task(user_id, task, context, chats)
 
-    sb.mark_tasks_ran([task.get("id")])
+    sb.mark_tasks_ran([added_task['id']])
 
-@app.get("/api/tasks")
+@app.get("/api/tasks", response_model=list[TaskResponse])
 def get_tasks(
     user_id: str = Depends(sb.authenticate_user)
 ):
     """Retrieves all tasks for the authenticated user."""
-    return sb.get_tasks(user_id)
+    user_tasks = sb.get_tasks(user_id)
+    return [
+        TaskResponse(
+            _id=task["id"],
+            _type=task["type"],
+            title=task["title"],
+            context=task["context"],
+            period=task["period"],
+            last_run_ts=task["last_run_ts"]
+        ) for task in user_tasks
+    ]
 
 @app.post("/api/cron/run-tasks")
 def run_scheduled_tasks(tasks = Body(...)):
+    """Endpoint to be called by a cron job to run scheduled tasks."""
     print("Received tasks:", tasks['tasks'])
     user_tasks = defaultdict(list)
 
