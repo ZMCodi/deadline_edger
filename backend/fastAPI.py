@@ -4,7 +4,6 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware # To allow frontend to connect
 
 
-
 # Download the required libraries using: pip install fastapi "uvicorn[standard]"
 # To run, type the following command into the terminal:
 # python -m uvicorn main:app --reload
