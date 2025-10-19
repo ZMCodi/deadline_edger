@@ -133,6 +133,7 @@ NO lengthy explanations. Just actions + warnings.
     # Ensure we always have response text
     response_text = result.text if result.text and result.text.strip() else "✅ Calendar updated successfully."
     print(f"✅ Agent response: {response_text}")
+    print(f"Full response: {result}")
     
     return {
         "text": response_text,

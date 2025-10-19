@@ -136,16 +136,18 @@ async def chat_endpoint(
     """
     Chat with the scheduling agent.
     Handles:
-    - One-off tasks: Adds directly to Google Calendar
+    - One-off events: Adds directly to Google Calendar
     - Reshuffling: Uses agent to optimize existing calendar
     - General questions: Fetches context and answers
     """
     
     # First, classify what the user wants
-    classify_prompt = """Classify user requests. Return type_ based on request:
+    classify_prompt = """Classify user requests. IF USER SAYS ANYTHING RESEMBLING A RECURRING TASK: RETURN "create_task".
+    IF IT INVOLVES ADDING A SINGLE EVENT TO THE CALENDAR, RETURN "run_task".
+    Return type_ based on request:
 
-- "no_task" = One-off calendar events, questions, general chat
 - "create_task" = Recurring scheduled tasks (daily, weekly, etc.) with proper Task objects
+- "no_task" = One-off calendar events, questions, general chat
 - "reshuffle_calendar" = Optimize/reorganize existing schedule
 
 For "create_task", you MUST provide complete Task objects with:
@@ -187,7 +189,8 @@ Recent Chat History:
 """
     
     # Handle based on classification
-    if classification.object.type_ == "run_task":
+    if classification.object.type_.value == "run_task":
+        print("🗓️ Handling one-off calendar event addition.")
         # One-off task: Add to calendar using agent
         agent_response = agent_chat(
             user_message=f"Add this to my calendar: {request.message}",
@@ -199,7 +202,8 @@ Recent Chat History:
             tasks=classification.object.tasks
         )
     
-    elif classification.object.type_ == "reshuffle_calendar":
+    elif classification.object.type_.value == "reshuffle_calendar":
+        print("🔄 Reshuffling calendar as per user request.")
         # Reshuffle calendar using agent
         agent_response = agent_chat(
             user_message=f"Reshuffle my calendar based on: {request.message}",
@@ -211,7 +215,8 @@ Recent Chat History:
             tasks=None
         )
     
-    elif classification.object.type_ == "create_task":
+    elif classification.object.type_.value == "create_task":
+        print(f"📝 Creating recurring task: {classification.object}")
         # Creating a recurring task - just classify and return
         return classification.object
     
