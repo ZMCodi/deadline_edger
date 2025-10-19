@@ -257,7 +257,6 @@ Review calendar, find optimal time slots, and create the events."""
     context_str = f"""
 User Context:
 - Preferences: {user_context.get('preferences', [])}
-- Calendar: {user_context.get('calendar_url', 'N/A')}
 
 Recent Chat History:
 {chr(10).join([f"- {msg.get('context', {}).get('message', '')}" for msg in chat_history[-5:]])}

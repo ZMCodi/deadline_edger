@@ -9,7 +9,7 @@ from backend.models import Task, TaskResponse, Context, UserToken, UserOnboardin
 from ai_sdk import generate_object, openai
 from dotenv import load_dotenv
 import backend.database.supabase_db as sb
-from backend.agent import scrape_webpage_tool, run_tasks_with_agent
+from backend.agent import scrape_webpage_tool, run_tasks_with_agent, chat_with_agent as agent_chat
 
 load_dotenv()
 
@@ -41,6 +41,7 @@ def create_task(
     context = sb.get_user_context(user_id)
     chats = sb.get_chat_messages(user_id)
 
+    # TODO: run the task here
     # run_task(user_id, task, context, chats)
 
     sb.mark_tasks_ran([added_task['id']])
@@ -129,17 +130,30 @@ class ChatRequest(BaseModel):
 
 
 @app.post("/api/agent/chat", response_model=AgentResponse)
-async def chat_with_agent(request: ChatRequest):
+async def chat_endpoint(
+    request: ChatRequest,
+    user_id: str = Depends(sb.authenticate_user)
+):
+    """
+    Chat with the scheduling agent.
+    Handles:
+    - One-off tasks: Adds directly to Google Calendar
+    - Reshuffling: Uses agent to optimize existing calendar
+    - General questions: Fetches context and answers
+    """
     
-    system_prompt = """You are a helpful AI assistant that can help with tasks and questions.
+    # First, classify what the user wants
+    classify_prompt = """You are a helpful AI assistant that classifies user requests.
 
 Your capabilities:
 - You can create, run, and manage tasks for users
 - You can reshuffle calendars and schedules
+- You can add one-off events to calendars
+- You can answer questions about schedules
 
 When the user asks for:
 1. Creating a task: Set type_ to "create_task" and populate the tasks list
-2. Running a task: Set type_ to "run_task" 
+2. Adding a one-off calendar event is classed as no_task as we just add to calendar
 3. Reshuffling calendar: Set type_ to "reshuffle_calendar"
 4. General questions: Set type_ to "no_task" and provide helpful text
 
@@ -149,11 +163,63 @@ Important:
 
     model = openai(os.getenv("DEFAULT_MODEL"))
     
-    result = generate_object(
+    classification = generate_object(
         model=model,
         schema=AgentResponse,
         prompt=request.message,
-        system=system_prompt,
+        system=classify_prompt,
     )
     
-    return result.object
+    # Get user context
+    context = sb.get_user_context(user_id)
+    chats = sb.get_chat_messages(user_id)
+    
+    # Build context string
+    context_str = f"""
+User Context:
+- Preferences: {context.get('preferences', [])}
+
+Recent Chat History:
+{chr(10).join([f"- {msg.get('context', {}).get('message', '')}" for msg in chats[-5:]])}
+"""
+    
+    # Handle based on classification
+    if classification.object.type_ == "run_task":
+        # One-off task: Add to calendar using agent
+        agent_response = agent_chat(
+            user_message=f"Add this to my calendar: {request.message}",
+            context_injection=context_str
+        )
+        return AgentResponse(
+            type_=classification.object.type_,
+            text=agent_response['text'],
+            tasks=classification.object.tasks
+        )
+    
+    elif classification.object.type_ == "reshuffle_calendar":
+        # Reshuffle calendar using agent
+        agent_response = agent_chat(
+            user_message=f"Reshuffle my calendar based on: {request.message}",
+            context_injection=context_str
+        )
+        return AgentResponse(
+            type_=classification.object.type_,
+            text=agent_response['text'],
+            tasks=None
+        )
+    
+    elif classification.object.type_ == "create_task":
+        # Creating a recurring task - just classify and return
+        return classification.object
+    
+    else:
+        # General question - use agent with context
+        agent_response = agent_chat(
+            user_message=request.message,
+            context_injection=context_str
+        )
+        return AgentResponse(
+            type_="no_task",
+            text=agent_response['text'],
+            tasks=None
+        )
