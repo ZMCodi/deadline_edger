@@ -84,7 +84,14 @@ export default function Home() {
                       User ID: {user.id}
                     </p>
                   </div>
-                  <div className="flex justify-center">
+                  <div className="flex flex-col items-center space-y-4">
+                    <Button 
+                      onClick={() => window.location.href = '/chat'}
+                      size="lg"
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      Chat with AI Assistant
+                    </Button>
                     <GoogleConnect />
                   </div>
                 </div>

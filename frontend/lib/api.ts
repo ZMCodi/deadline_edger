@@ -113,3 +113,78 @@ export async function submitGoogleToken(tokenData: Record<string, any>): Promise
     throw error
   }
 }
+
+interface ChatRequest {
+  message: string
+}
+
+export interface AgentResponse {
+  type_: 'create_task' | 'run_task' | 'reshuffle_calendar' | 'no_task'
+  text: string
+  tasks?: Array<{
+    context: {
+      prompt: string
+      priority: string
+      url?: string
+    }
+    period: string
+    type_: 'EMAIL' | 'WEB' | 'TODO'
+    title: string
+  }> | null
+}
+
+export async function chatWithAgent(message: string): Promise<AgentResponse> {
+  try {
+    const headers = await getAuthHeaders()
+    
+    const response = await fetch(`${API_BASE_URL}/api/agent/chat`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ message } as ChatRequest)
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Failed to chat with agent: ${response.statusText} - ${errorText}`)
+    }
+
+    const data = await response.json()
+    return data as AgentResponse
+  } catch (error) {
+    console.error('Error chatting with agent:', error)
+    throw error
+  }
+}
+
+interface TaskCreateRequest {
+  title: string
+  type_: 'EMAIL' | 'WEB' | 'TODO'
+  context: {
+    prompt: string
+    priority: string
+    url?: string
+  }
+  period: string
+}
+
+export async function createTask(task: TaskCreateRequest): Promise<boolean> {
+  try {
+    const headers = await getAuthHeaders()
+    
+    const response = await fetch(`${API_BASE_URL}/api/task/create`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(task)
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Failed to create task: ${response.statusText} - ${errorText}`)
+    }
+
+    return true
+  } catch (error) {
+    console.error('Error creating task:', error)
+    throw error
+  }
+}
