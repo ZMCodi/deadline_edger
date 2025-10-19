@@ -216,19 +216,6 @@ def search_emails(service=None, token_data=None, search_term='', max_results=10)
         query=f'subject:{search_term} OR body:{search_term}'
     )
 
-def mark_as_read(service, message_id):
-    """Mark an email as read"""
-    try:
-        service.users().messages().modify(
-            userId='me',
-            id=message_id,
-            body={'removeLabelIds': ['UNREAD']}
-        ).execute()
-        return True
-    except Exception as e:
-        print(f"Error marking message as read: {e}")
-        return False
-
 def emails_to_json_string(emails, pretty=True):
     """
     Convert emails list to JSON string
