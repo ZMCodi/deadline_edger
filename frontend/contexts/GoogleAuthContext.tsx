@@ -31,6 +31,11 @@ interface GoogleAuthContextType {
   hasScope: (scope: string) => boolean
   refreshTokens: () => Promise<void>
   isRefreshingTokens: boolean
+  hasGmailReadAccess: boolean
+  hasGmailWriteAccess: boolean
+  quotaExceeded: boolean
+  lastApiError: string | null
+  clearApiError: () => void
 }
 
 const GoogleAuthContext = createContext<GoogleAuthContextType | undefined>(undefined)
@@ -39,6 +44,7 @@ const SCOPES = [
   'https://www.googleapis.com/auth/userinfo.email',
   'https://www.googleapis.com/auth/userinfo.profile',
   'https://www.googleapis.com/auth/gmail.readonly',
+  'https://www.googleapis.com/auth/gmail.modify',
   'https://www.googleapis.com/auth/calendar.readonly',
   'https://www.googleapis.com/auth/calendar.events'
 ].join(' ')
@@ -50,6 +56,17 @@ export function GoogleAuthProvider({ children }: { children: React.ReactNode }) 
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isRefreshingTokens, setIsRefreshingTokens] = useState(false)
+  const [quotaExceeded, setQuotaExceeded] = useState(false)
+  const [lastApiError, setLastApiError] = useState<string | null>(null)
+
+  const setGapiToken = (tokens: GoogleTokens) => {
+    if (window.gapi?.client) {
+      window.gapi.client.setToken({
+        access_token: tokens.access_token,
+        token_type: tokens.token_type
+      })
+    }
+  }
 
   useEffect(() => {
     const initGoogle = async () => {
@@ -61,6 +78,19 @@ export function GoogleAuthProvider({ children }: { children: React.ReactNode }) 
         }
         
         setIsGoogleLoaded(true)
+        
+        // Set token if we have saved tokens
+        const savedTokens = localStorage.getItem('google_tokens')
+        if (savedTokens) {
+          try {
+            const parsedTokens = JSON.parse(savedTokens)
+            if (parsedTokens.expiry_date && Date.now() < parsedTokens.expiry_date) {
+              setGapiToken(parsedTokens)
+            }
+          } catch (error) {
+            console.error('Error setting saved tokens:', error)
+          }
+        }
       } catch (error) {
         setError(`Failed to load Google APIs: ${error}`)
       }
@@ -76,6 +106,10 @@ export function GoogleAuthProvider({ children }: { children: React.ReactNode }) 
         // Check if token is expired
         if (parsedTokens.expiry_date && Date.now() < parsedTokens.expiry_date) {
           setTokens(parsedTokens)
+          
+          // Set the access token for gapi.client
+          setGapiToken(parsedTokens)
+          
           loadUserInfo(parsedTokens.access_token)
         } else {
           localStorage.removeItem('google_tokens')
@@ -203,6 +237,9 @@ export function GoogleAuthProvider({ children }: { children: React.ReactNode }) 
           setTokens(googleTokens)
           localStorage.setItem('google_tokens', JSON.stringify(googleTokens))
           
+          // Set the access token for gapi.client to use in API calls
+          setGapiToken(googleTokens)
+          
           await loadUserInfo(googleTokens.access_token)
           
           // Send tokens to backend
@@ -265,6 +302,14 @@ export function GoogleAuthProvider({ children }: { children: React.ReactNode }) 
     }
   }
 
+  const clearApiError = () => {
+    setLastApiError(null)
+    setQuotaExceeded(false)
+  }
+
+  const hasGmailReadAccess = hasScope('https://www.googleapis.com/auth/gmail.readonly')
+  const hasGmailWriteAccess = hasScope('https://www.googleapis.com/auth/gmail.modify')
+
   const value = {
     user,
     tokens,
@@ -276,7 +321,12 @@ export function GoogleAuthProvider({ children }: { children: React.ReactNode }) 
     signOut,
     hasScope,
     refreshTokens,
-    isRefreshingTokens
+    isRefreshingTokens,
+    hasGmailReadAccess,
+    hasGmailWriteAccess,
+    quotaExceeded,
+    lastApiError,
+    clearApiError
   }
 
   return (

@@ -156,7 +156,7 @@ export async function chatWithAgent(message: string): Promise<AgentResponse> {
   }
 }
 
-interface TaskCreateRequest {
+export interface TaskCreateRequest {
   title: string
   type_: 'EMAIL' | 'WEB' | 'TODO'
   context: {

@@ -7,7 +7,11 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Mail, Calendar, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react'
 
-export function GoogleConnect() {
+interface GoogleConnectProps {
+  compact?: boolean
+}
+
+export function GoogleConnect({ compact = false }: GoogleConnectProps) {
   const { user, isConnected, isLoading, error, isGoogleLoaded, signInWithGoogle, signOut, hasScope, refreshTokens, isRefreshingTokens } = useGoogleAuth()
 
   const scopeStatus = [
@@ -32,6 +36,24 @@ export function GoogleConnect() {
   ]
 
   if (isConnected && user) {
+    if (compact) {
+      return (
+        <div className="flex items-center space-x-2">
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={user.picture} alt={user.name} />
+            <AvatarFallback className="text-xs">{user.name.charAt(0)}</AvatarFallback>
+          </Avatar>
+          <div className="hidden sm:block">
+            <p className="text-sm font-medium truncate max-w-[100px]">{user.name}</p>
+            <p className="text-xs text-gray-500">Connected</p>
+          </div>
+          <Button onClick={signOut} variant="ghost" size="sm" className="text-xs">
+            Sign Out
+          </Button>
+        </div>
+      )
+    }
+
     return (
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">

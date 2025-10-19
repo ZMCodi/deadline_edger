@@ -18,7 +18,7 @@ export function ChatInput({
   onSendMessage, 
   disabled = false, 
   isLoading = false,
-  placeholder = "Ask me to create tasks, manage your calendar, or help with productivity...",
+  placeholder = "Create commitments, manage calendar, or get help...",
   className 
 }: ChatInputProps) {
   const [message, setMessage] = useState('')
@@ -35,7 +35,7 @@ export function ChatInput({
     
     try {
       await onSendMessage(messageToSend)
-    } catch (error) {
+    } catch {
       // If there's an error, restore the message
       setMessage(messageToSend)
     }
@@ -44,33 +44,32 @@ export function ChatInput({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      handleSubmit(e as any)
+      handleSubmit(e as unknown as FormEvent)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className={cn('flex gap-2', className)}>
-      <div className="flex-1 relative">
-        <Textarea
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          disabled={disabled || isLoading}
-          className="min-h-[60px] max-h-[120px] resize-none pr-12"
-          rows={2}
-        />
-      </div>
+    <form onSubmit={handleSubmit} className={cn('flex gap-3', className)}>
+      <Textarea
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        disabled={disabled || isLoading}
+        className="flex-1 min-h-[48px] max-h-[120px] resize-none rounded-xl border-gray-200 focus:border-gray-400 focus:ring-0"
+        rows={1}
+      />
       <Button
         type="submit"
         size="icon"
         disabled={!message.trim() || disabled || isLoading}
-        className="shrink-0 h-[60px] w-[60px]"
+        variant="ghost"
+        className="shrink-0 h-12 w-12 rounded-xl hover:bg-gray-100"
       >
         {isLoading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Loader2 className="h-5 w-5 animate-spin text-gray-600" />
         ) : (
-          <Send className="h-4 w-4" />
+          <Send className="h-5 w-5 text-gray-600" />
         )}
       </Button>
     </form>

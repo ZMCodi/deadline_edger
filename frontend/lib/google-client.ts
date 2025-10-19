@@ -74,10 +74,22 @@ export const loadGoogleAPI = (): Promise<void> => {
 }
 
 export const initializeGoogleClient = async () => {
-  await window.gapi.client.init({
+  const initConfig: any = {
+    apiKey: process.env.NEXT_PUBLIC_GOOGLE_API_KEY,
     discoveryDocs: [
       'https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest',
       'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'
     ]
-  })
+  }
+  
+  console.log('Initializing Google client with API key:', process.env.NEXT_PUBLIC_GOOGLE_API_KEY ? 'Present' : 'Missing')
+  
+  await window.gapi.client.init(initConfig)
+  
+  // Verify calendar API is loaded
+  if (window.gapi.client.calendar) {
+    console.log('Calendar API successfully loaded')
+  } else {
+    console.error('Calendar API failed to load')
+  }
 }

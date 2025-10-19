@@ -1,11 +1,9 @@
 'use client'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { User, Bot } from 'lucide-react'
-import { TaskSuggestion } from './TaskSuggestion'
 import type { AgentResponse } from '@/lib/api'
+import { CalendarEvent } from '@/lib/calendar-service'
 
 interface ChatMessageProps {
   message: {
@@ -14,78 +12,57 @@ interface ChatMessageProps {
     content: string
     timestamp: Date
     agentResponse?: AgentResponse
+    calendarEvent?: CalendarEvent
+    showCalendar?: boolean
   }
-  onCreateTask?: (task: any) => Promise<void>
   className?: string
 }
 
-export function ChatMessage({ message, onCreateTask, className }: ChatMessageProps) {
+export function ChatMessage({ message, className }: ChatMessageProps) {
   const isUser = message.role === 'user'
-  const hasTaskSuggestions = !isUser && 
-    message.agentResponse?.type_ === 'create_task' && 
-    message.agentResponse?.tasks && 
-    message.agentResponse.tasks.length > 0
 
   return (
     <div
       className={cn(
-        'flex w-full gap-2 py-2',
+        'flex w-full gap-3 py-4',
         isUser ? 'justify-end' : 'justify-start',
         className
       )}
     >
       {!isUser && (
-        <Avatar className="h-7 w-7 shrink-0 mt-1">
-          <AvatarImage src="/ai-avatar.png" alt="AI Assistant" />
-          <AvatarFallback>
-            <Bot className="h-3 w-3" />
-          </AvatarFallback>
-        </Avatar>
+        <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+          <Bot className="h-4 w-4 text-gray-600" />
+        </div>
       )}
       
-      <div className="flex flex-col max-w-[80%] min-w-0 gap-2">
-        <div className="flex flex-col">
-          <Card
-            className={cn(
-              'px-3 py-2',
-              isUser
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-white border-gray-200'
-            )}
-          >
-            <div className="text-sm whitespace-pre-wrap break-words">
-              {message.content}
-            </div>
-          </Card>
-          <div className={cn(
-            'text-xs mt-1 px-1',
-            isUser ? 'text-right text-gray-500' : 'text-left text-gray-500'
-          )}>
-            {message.timestamp.toLocaleTimeString([], { 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            })}
+      <div className="flex flex-col max-w-[70%] min-w-0">
+        <div
+          className={cn(
+            'px-4 py-3 rounded-2xl',
+            isUser
+              ? 'bg-gray-900 text-white'
+              : 'bg-gray-100 text-gray-900'
+          )}
+        >
+          <div className="text-sm whitespace-pre-wrap break-words">
+            {message.content}
           </div>
         </div>
-
-        {/* Inline Task Suggestions */}
-        {hasTaskSuggestions && onCreateTask && (
-          <TaskSuggestion
-            tasks={message.agentResponse!.tasks!}
-            onCreateTask={onCreateTask}
-            onDismiss={() => {}} // No dismiss for inline suggestions
-            className="mt-1"
-          />
-        )}
+        <div className={cn(
+          'text-xs mt-1.5 px-2',
+          isUser ? 'text-right text-gray-400' : 'text-left text-gray-400'
+        )}>
+          {message.timestamp.toLocaleTimeString([], { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          })}
+        </div>
       </div>
       
       {isUser && (
-        <Avatar className="h-7 w-7 shrink-0 mt-1">
-          <AvatarImage src="/user-avatar.png" alt="You" />
-          <AvatarFallback>
-            <User className="h-3 w-3" />
-          </AvatarFallback>
-        </Avatar>
+        <div className="h-8 w-8 rounded-full bg-gray-900 flex items-center justify-center shrink-0">
+          <User className="h-4 w-4 text-white" />
+        </div>
       )}
     </div>
   )

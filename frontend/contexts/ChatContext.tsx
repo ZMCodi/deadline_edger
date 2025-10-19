@@ -1,27 +1,30 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
-import { chatWithAgent } from '@/lib/api'
+import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react'
+import { nanoid } from 'nanoid'
+import { chatWithAgent, AgentResponse } from '@/lib/api'
+import { taskCalendarService } from '@/lib/task-calendar-integration'
+import { CalendarEvent } from '@/lib/calendar-service'
+
+export interface AgentTask {
+  context: {
+    prompt: string
+    priority: string
+    url?: string
+  }
+  period: string
+  type_: 'EMAIL' | 'WEB' | 'TODO'
+  title: string
+}
 
 interface ChatMessage {
-  id: string
-  role: 'user' | 'assistant'
-  content: string
-  timestamp: Date
-  agentResponse?: {
-    type_: 'create_task' | 'run_task' | 'reshuffle_calendar' | 'no_task'
-    text: string
-    tasks?: Array<{
-      context: {
-        prompt: string
-        priority: string
-        url?: string
-      }
-      period: string
-      type_: 'EMAIL' | 'WEB' | 'TODO'
-      title: string
-    }>
-  }
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+  agentResponse?: AgentResponse;
+  calendarEvent?: CalendarEvent;
+  showCalendar?: boolean;
 }
 
 interface ChatContextType {
@@ -30,12 +33,15 @@ interface ChatContextType {
   error: string | null
   sendMessage: (message: string) => Promise<void>
   clearMessages: () => void
-  onTaskSuggest?: (tasks: any[]) => void
+  onTaskSuggest?: (tasks: AgentTask[]) => void
+  addCalendarEvent: (event: CalendarEvent) => void
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined)
 
-export function ChatProvider({ children, onTaskSuggest }: { children: ReactNode, onTaskSuggest?: (tasks: any[]) => void }) {
+export { ChatContext }
+
+export function ChatProvider({ children, onTaskSuggest }: { children: ReactNode, onTaskSuggest?: (tasks: AgentTask[]) => void }) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -48,7 +54,7 @@ export function ChatProvider({ children, onTaskSuggest }: { children: ReactNode,
 
     // Add user message immediately
     const userMessage: ChatMessage = {
-      id: Date.now().toString(),
+      id: nanoid(),
       role: 'user',
       content: message,
       timestamp: new Date()
@@ -62,7 +68,7 @@ export function ChatProvider({ children, onTaskSuggest }: { children: ReactNode,
       
       // Add agent response
       const assistantMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
+        id: nanoid(),
         role: 'assistant',
         content: agentResponse.text,
         timestamp: new Date(),
@@ -88,6 +94,27 @@ export function ChatProvider({ children, onTaskSuggest }: { children: ReactNode,
     setError(null)
   }, [])
 
+  const addCalendarEvent = useCallback((event: CalendarEvent) => {
+    const eventDate = event.start.dateTime || event.start.date;
+    const dateString = eventDate ? new Date(eventDate).toLocaleString() : 'the specified date';
+
+    const calendarMessage: ChatMessage = {
+      id: nanoid(),
+      role: 'assistant',
+      content: `✅ Task "${event.summary}" has been added to your calendar for ${dateString}.`,
+      timestamp: new Date(),
+      calendarEvent: event,
+      showCalendar: true
+    }
+
+    setMessages(prev => [...prev, calendarMessage])
+  }, [])
+
+  // Set up calendar service callback
+  useEffect(() => {
+    taskCalendarService.setCalendarUpdateCallback(addCalendarEvent)
+  }, [addCalendarEvent])
+
   return (
     <ChatContext.Provider value={{
       messages,
@@ -95,7 +122,8 @@ export function ChatProvider({ children, onTaskSuggest }: { children: ReactNode,
       error,
       sendMessage,
       clearMessages,
-      onTaskSuggest
+      onTaskSuggest,
+      addCalendarEvent
     }}>
       {children}
     </ChatContext.Provider>
