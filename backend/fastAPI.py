@@ -156,7 +156,7 @@ Important:
 - Be clear and concise in your explanations for reusability later.
 """
 
-    model = openai("google/gemini-2.5-flash")
+    model = openai(os.getenv("DEFAULT_MODEL"))
     
     result = generate_object(
         model=model,
