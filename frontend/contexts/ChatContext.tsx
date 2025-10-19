@@ -13,7 +13,7 @@ export interface AgentTask {
     url?: string
   }
   period: string
-  type_: 'EMAIL' | 'WEB' | 'TODO'
+  type: 'EMAIL' | 'WEB' | 'TODO'
   title: string
 }
 

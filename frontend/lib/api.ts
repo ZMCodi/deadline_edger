@@ -128,37 +128,57 @@ export interface AgentResponse {
       url?: string
     }
     period: string
-    type_: 'EMAIL' | 'WEB' | 'TODO'
+    type: 'EMAIL' | 'WEB' | 'TODO'
     title: string
   }> | null
 }
 
 export async function chatWithAgent(message: string): Promise<AgentResponse> {
   try {
+    console.log('🌐 [API] chatWithAgent called with message:', message)
+    console.log('🌐 [API] API_BASE_URL:', API_BASE_URL)
+    
     const headers = await getAuthHeaders()
+    console.log('🔑 [API] Auth headers obtained')
+    
+    const requestBody = { message } as ChatRequest
+    console.log('📤 [API] Request payload:', requestBody)
     
     const response = await fetch(`${API_BASE_URL}/api/agent/chat`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ message } as ChatRequest)
+      body: JSON.stringify(requestBody)
     })
+
+    console.log('📡 [API] Response status:', response.status, response.statusText)
 
     if (!response.ok) {
       const errorText = await response.text()
+      console.error('❌ [API] Error response:', errorText)
       throw new Error(`Failed to chat with agent: ${response.statusText} - ${errorText}`)
     }
 
     const data = await response.json()
-    return data as AgentResponse
+    console.log('📨 [API] Raw response data:', data)
+    
+    const agentResponse = data as AgentResponse
+    console.log('✅ [API] Parsed AgentResponse:', {
+      type: agentResponse.type_,
+      text: agentResponse.text,
+      hasTasksArray: !!agentResponse.tasks,
+      tasksCount: agentResponse.tasks?.length || 0
+    })
+    
+    return agentResponse
   } catch (error) {
-    console.error('Error chatting with agent:', error)
+    console.error('❌ [API] Error in chatWithAgent:', error)
     throw error
   }
 }
 
 export interface TaskCreateRequest {
   title: string
-  type_: 'EMAIL' | 'WEB' | 'TODO'
+  type: 'EMAIL' | 'WEB' | 'TODO'
   context: {
     prompt: string
     priority: string
@@ -169,7 +189,11 @@ export interface TaskCreateRequest {
 
 export async function createTask(task: TaskCreateRequest): Promise<boolean> {
   try {
+    console.log('🌐 [API] createTask called with:', task)
+    console.log('🌐 [API] Using endpoint:', `${API_BASE_URL}/api/task/create`)
+    
     const headers = await getAuthHeaders()
+    console.log('🔑 [API] Auth headers obtained for task creation')
     
     const response = await fetch(`${API_BASE_URL}/api/task/create`, {
       method: 'POST',
@@ -177,21 +201,25 @@ export async function createTask(task: TaskCreateRequest): Promise<boolean> {
       body: JSON.stringify(task)
     })
 
+    console.log('📡 [API] Task creation response status:', response.status, response.statusText)
+
     if (!response.ok) {
       const errorText = await response.text()
+      console.error('❌ [API] Task creation error response:', errorText)
       throw new Error(`Failed to create task: ${response.statusText} - ${errorText}`)
     }
 
+    console.log('✅ [API] Task created successfully')
     return true
   } catch (error) {
-    console.error('Error creating task:', error)
+    console.error('❌ [API] Error in createTask:', error)
     throw error
   }
 }
 
 export interface TaskResponse {
   id_: number
-  type_: 'EMAIL' | 'WEB' | 'TODO'
+  type: 'EMAIL' | 'WEB' | 'TODO'
   title: string
   context: {
     prompt: string

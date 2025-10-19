@@ -5,12 +5,11 @@ from typing import Optional, Dict, List, Any
 from fastapi import Body, FastAPI, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from collections import defaultdict
-from models import Task, TaskResponse, Context, UserToken, UserOnboarding
+from backend.models import Task, TaskResponse, Context, UserToken, UserOnboarding, AgentResponse
 from ai_sdk import generate_object, openai
 from dotenv import load_dotenv
-import database.supabase_db as sb
-from models import AgentResponse
-from agent import scrape_webpage_tool
+import backend.database.supabase_db as sb
+from backend.agent import scrape_webpage_tool, run_tasks_with_agent, chat_with_agent as agent_chat
 
 load_dotenv()
 
@@ -34,7 +33,7 @@ def create_task(
     added_task = sb.add_task(
         title=task.title,
         user_id=user_id,
-        type_=task.type_.value,
+        type_=task.type.value,
         context=task.context.model_dump(mode="json"),
         period=task.period
     )
@@ -42,8 +41,8 @@ def create_task(
     context = sb.get_user_context(user_id)
     chats = sb.get_chat_messages(user_id)
 
-    # run_task(user_id, task, context, chats)
-
+    response = run_tasks_with_agent(user_id, [task.model_dump(mode="json")], context, chats)
+    print(f"Agent response: {response['text']}")
     sb.mark_tasks_ran([added_task['id']])
 
 @app.get("/api/tasks", response_model=list[TaskResponse])
@@ -112,18 +111,12 @@ def run_scheduled_tasks(tasks = Body(...)):
         print(f"Running tasks for user {user_id}:")
         context = sb.get_user_context(user_id)
         chats = sb.get_chat_messages(user_id)
-        print(f" - User context: {context}")
-        print(f" - Chat history: {chats}")
-
-        ids = []
-        for task in tasks:
-            print(f" - Task: {task}")
-            ids.append(task.get("id"))
-
-            # ADD YOUR TASK RUNNING LOGIC HERE
-            # run_task(user_id, task, context, chats)
-
-        # mark them as ran
+        
+        # Run all tasks through the agent
+        response = run_tasks_with_agent(user_id, tasks, context, chats)
+        print(f"Agent response: {response['text']}")
+        
+        ids = [task.get("id") for task in tasks]
         sb.mark_tasks_ran(ids)
 
 # Configure OpenRouter as default for all OpenAI calls
@@ -136,31 +129,114 @@ class ChatRequest(BaseModel):
 
 
 @app.post("/api/agent/chat", response_model=AgentResponse)
-async def chat_with_agent(request: ChatRequest):
+async def chat_endpoint(
+    request: ChatRequest,
+    user_id: str = Depends(sb.authenticate_user)
+):
+    """
+    Chat with the scheduling agent.
+    Handles:
+    - One-off events: Adds directly to Google Calendar
+    - Reshuffling: Uses agent to optimize existing calendar
+    - General questions: Fetches context and answers
+    """
     
-    system_prompt = """You are a helpful AI assistant that can help with tasks and questions.
+    # First, classify what the user wants
+    classify_prompt = """Classify user requests. IF USER SAYS ANYTHING RESEMBLING A RECURRING TASK: RETURN "create_task".
+    IF IT INVOLVES ADDING A SINGLE EVENT TO THE CALENDAR, RETURN "run_task".
+    Return type_ based on request:
 
-Your capabilities:
-- You can create, run, and manage tasks for users
-- You can reshuffle calendars and schedules
+- "create_task" = Recurring scheduled tasks (daily, weekly, etc.) with proper Task objects
+- "no_task" = One-off calendar events, questions, general chat
+- "reshuffle_calendar" = Optimize/reorganize existing schedule
 
-When the user asks for:
-1. Creating a task: Set type_ to "create_task" and populate the tasks list
-2. Running a task: Set type_ to "run_task" 
-3. Reshuffling calendar: Set type_ to "reshuffle_calendar"
-4. General questions: Set type_ to "no_task" and provide helpful text
+For "create_task", you MUST provide complete Task objects with:
+- title: string
+- type_: "EMAIL", "WEB", or "TODO"  
+- period: "1 hour", "1 day", "1 week", etc. use postgres interval type
+- context: {prompt: string, priority: "high"/"medium"/"low", url: string or null}
 
-Important:
-- Be clear and concise in your explanations for reusability later.
+For all others, just return text description, tasks can be null.
 """
 
-    model = openai("google/gemini-2.5-flash")
+    model = openai(os.getenv("DEFAULT_MODEL"))
     
-    result = generate_object(
-        model=model,
-        schema=AgentResponse,
-        prompt=request.message,
-        system=system_prompt,
-    )
+    try:
+        classification = generate_object(
+            model=model,
+            schema=AgentResponse,
+            prompt=request.message,
+            system=classify_prompt,
+        )
+    except Exception as e:
+        # If classification fails, default to no_task and use agent directly
+        print(f"⚠️ Classification failed: {e}, defaulting to no_task")
+        classification = type('obj', (object,), {
+            'object': AgentResponse(type_="no_task", text="", tasks=None)
+        })
     
-    return result.object
+    # Get user context
+    context = sb.get_user_context(user_id)
+    chats = sb.get_chat_messages(user_id)
+    
+    # Build context string
+    context_str = f"""
+User Context:
+- Preferences: {context.get('preferences', [])}
+
+Recent Chat History:
+{chr(10).join([f"- {msg.get('context', {}).get('message', '')}" for msg in chats[-5:]])}
+"""
+    
+    # Handle based on classification
+    if classification.object.type_.value == "run_task":
+        print("🗓️ Handling one-off calendar event addition.")
+        # One-off task: Add to calendar using agent
+        agent_response = agent_chat(
+            user_message=f"Add this to my calendar: {request.message}",
+            context_injection=context_str
+        )
+        return AgentResponse(
+            type_=classification.object.type_,
+            text=agent_response['text'],
+            tasks=classification.object.tasks
+        )
+    
+    elif classification.object.type_.value == "reshuffle_calendar":
+        print("🔄 Reshuffling calendar as per user request.")
+        # Reshuffle calendar using agent
+        agent_response = agent_chat(
+            user_message=f"Reshuffle my calendar based on: {request.message}",
+            context_injection=context_str
+        )
+        return AgentResponse(
+            type_=classification.object.type_,
+            text=agent_response['text'],
+            tasks=None
+        )
+    
+    elif classification.object.type_.value == "create_task":
+        print(f"📝 Creating recurring task: {classification.object}")
+        # Creating a recurring task - just classify and return
+        return classification.object
+    
+    else:
+        # General question - use agent with context
+        agent_response = agent_chat(
+            user_message=request.message,
+            context_injection=context_str
+        )
+        
+        # Debug logging
+        print(f"🔍 Agent response text: {agent_response.get('text', 'NO TEXT')}")
+        print(f"🔍 Agent response keys: {agent_response.keys()}")
+        
+        response_text = agent_response.get('text', '')
+        if not response_text or response_text.strip() == '':
+            response_text = "I've analyzed your schedule and made the necessary updates. Check your calendar for the changes."
+        
+        return AgentResponse(
+            type_="no_task",
+            text=response_text,
+            tasks=None
+        )

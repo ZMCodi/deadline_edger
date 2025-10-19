@@ -1,6 +1,5 @@
 import os
 from typing import Optional
-from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
 from firecrawl import FirecrawlApp
 from dotenv import load_dotenv
@@ -41,7 +40,9 @@ def scrape_url(url: str, only_main_content: bool = True, api_key: Optional[str] 
             "onlyMainContent": only_main_content,
         }
         
-        result = app.scrape_url(url, params=params)
+        result = app.scrape(url, only_main_content=only_main_content, formats=["markdown"])
+        # print(f"Scrape result for {url}: {result}")
+        print(f"{url} scraped successfully.")
         
         # Extract content
         if isinstance(result, dict):
@@ -55,34 +56,3 @@ def scrape_url(url: str, only_main_content: bool = True, api_key: Optional[str] 
         
     except Exception as e:
         return f"Error scraping {url}: {str(e)}"
-
-
-   
-def create_scrape_tool(api_key: Optional[str] = None) -> StructuredTool:
-    """
-    Create a LangChain-compatible web scraping tool
-    
-    Args:
-        api_key: Firecrawl API key (optional, uses FIRECRAWL_API_KEY env var if not provided)
-        
-    Returns:
-        StructuredTool for web scraping
-        
-    Example:
-        >>> tool = create_scrape_tool()
-        >>> result = tool.run({"url": "https://example.com"})
-        >>> print(result)
-    """
-    def scrape_wrapper(url: str, only_main_content: bool = True) -> str:
-        return scrape_url(url=url, only_main_content=only_main_content, api_key=api_key)
-    
-    return StructuredTool.from_function(
-        func=scrape_wrapper,
-        name="scrape_webpage",
-        description=(
-            "Scrape content from a specific webpage. "
-            "Provide a URL to extract its content in markdown format. "
-            "Useful for getting the full text content of a specific page."
-        ),
-        args_schema=ScrapeInput,
-    )

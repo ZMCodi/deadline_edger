@@ -14,7 +14,7 @@ interface Task {
     url?: string
   }
   period: string
-  type_: 'EMAIL' | 'WEB' | 'TODO'
+  type: 'EMAIL' | 'WEB' | 'TODO'
   title: string
 }
 
@@ -160,7 +160,7 @@ export function TaskSuggestion({
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xs font-medium text-gray-900">New Commitment</span>
                   <span className="text-xs px-2 py-0.5 rounded bg-gray-200 text-gray-700">
-                    {getTypeLabel(task.type_)}
+                    {getTypeLabel(task.type)}
                   </span>
                   <span className="text-xs text-gray-500">
                     {task.context.priority}
