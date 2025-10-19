@@ -53,7 +53,7 @@ import database.supabase_db as sb
 
 # Import Layer 1 (Core Functions) from your original file
 # We assume this file is in the same directory (e.g., 'tools/')
-from .emails_fetched import (
+from .email_fetcher import (
     get_gmail_service,
     get_unread_emails,
     get_emails_from_sender,
