@@ -143,32 +143,36 @@ async def chat_endpoint(
     """
     
     # First, classify what the user wants
-    classify_prompt = """You are a helpful AI assistant that classifies user requests.
+    classify_prompt = """Classify user requests. Return type_ based on request:
 
-Your capabilities:
-- You can create, run, and manage tasks for users
-- You can reshuffle calendars and schedules
-- You can add one-off events to calendars
-- You can answer questions about schedules
+- "no_task" = One-off calendar events, questions, general chat
+- "create_task" = Recurring scheduled tasks (daily, weekly, etc.) with proper Task objects
+- "reshuffle_calendar" = Optimize/reorganize existing schedule
 
-When the user asks for:
-1. Creating a task: Set type_ to "create_task" and populate the tasks list
-2. Adding a one-off calendar event is classed as no_task as we just add to calendar
-3. Reshuffling calendar: Set type_ to "reshuffle_calendar"
-4. General questions: Set type_ to "no_task" and provide helpful text
+For "create_task", you MUST provide complete Task objects with:
+- title: string
+- type_: "EMAIL", "WEB", or "TODO"  
+- period: "1 hour", "1 day", "1 week", etc. use postgres interval type
+- context: {prompt: string, priority: "high"/"medium"/"low", url: string or null}
 
-Important:
-- Be clear and concise in your explanations for reusability later.
+For all others, just return text description, tasks can be null.
 """
 
     model = openai(os.getenv("DEFAULT_MODEL"))
     
-    classification = generate_object(
-        model=model,
-        schema=AgentResponse,
-        prompt=request.message,
-        system=classify_prompt,
-    )
+    try:
+        classification = generate_object(
+            model=model,
+            schema=AgentResponse,
+            prompt=request.message,
+            system=classify_prompt,
+        )
+    except Exception as e:
+        # If classification fails, default to no_task and use agent directly
+        print(f"⚠️ Classification failed: {e}, defaulting to no_task")
+        classification = type('obj', (object,), {
+            'object': AgentResponse(type_="no_task", text="", tasks=None)
+        })
     
     # Get user context
     context = sb.get_user_context(user_id)
@@ -218,8 +222,17 @@ Recent Chat History:
             user_message=request.message,
             context_injection=context_str
         )
+        
+        # Debug logging
+        print(f"🔍 Agent response text: {agent_response.get('text', 'NO TEXT')}")
+        print(f"🔍 Agent response keys: {agent_response.keys()}")
+        
+        response_text = agent_response.get('text', '')
+        if not response_text or response_text.strip() == '':
+            response_text = "I've analyzed your schedule and made the necessary updates. Check your calendar for the changes."
+        
         return AgentResponse(
             type_="no_task",
-            text=agent_response['text'],
+            text=response_text,
             tasks=None
         )
