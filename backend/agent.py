@@ -69,7 +69,7 @@ def create_agent():
     os.environ["OPENAI_API_KEY"] = os.getenv("OPENROUTER_API_KEY")
     
     # Return a configured model instance
-    model = openai("openai/gpt-4o")
+    model = openai(os.getenv("DEFAULT_MODEL"))
     return model
 
 
@@ -106,9 +106,8 @@ When creating/updating calendar events, use ISO datetime format (e.g., '2024-12-
     
     print(f"💬 User: {user_message}")
     print(f"🤖 Agent thinking...")
-    
     result = generate_text(
-        model=openai("openai/gpt-4o"),
+        model=openai(os.getenv("DEFAULT_MODEL")),
         prompt=user_message,
         system=system_prompt,
         tools=[

@@ -94,7 +94,7 @@ When responding:
     os.environ["OPENAI_API_KEY"] = os.getenv("OPENROUTER_API_KEY")
     
 
-    model = provider("google/gemini-2.5-flash")
+    model = openai(os.getenv("DEFAULT_MODEL"))
     
     result = generate_text(
         model=model,

@@ -14,7 +14,6 @@ from datetime import datetime
 # Hardcoded user ID for testing
 USER_ID = "e6ac7c44-b6d3-465c-9d75-3d44611d0e6c"
 
-=========================================================
 
 def list_calendars_execute() -> list[dict]:
     """List all calendars for a user"""
