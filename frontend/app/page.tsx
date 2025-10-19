@@ -3,13 +3,16 @@
 
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useOnboardingStatus } from '@/hooks/useOnboardingStatus'
 import { AuthModal } from '@/components/auth/AuthModal'
 import { UserMenu } from '@/components/auth/UserMenu'
 import { GoogleConnect } from '@/components/google/GoogleConnect'
+import { OnboardingModal } from '@/components/onboarding/OnboardingModal'
 import { Button } from '@/components/ui/button'
 
 export default function Home() {
   const { user, loading } = useAuth()
+  const { needsOnboarding, refreshStatus } = useOnboardingStatus()
   const [showAuthModal, setShowAuthModal] = useState(false)
 
   if (loading) {
@@ -18,6 +21,10 @@ export default function Home() {
         <div className="text-lg">Loading...</div>
       </div>
     )
+  }
+
+  const handleOnboardingComplete = () => {
+    refreshStatus()
   }
 
   return (
@@ -50,25 +57,38 @@ export default function Home() {
               Welcome to Deadline Edger
             </h2>
             {user ? (
-              <div className="space-y-6">
-                <p className="text-lg text-gray-600">
-                  Hello, {user.email}! You're successfully signed in.
-                </p>
-                <div className="bg-white shadow rounded-lg p-6 max-w-md mx-auto">
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Your Account
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Email: {user.email}
+              needsOnboarding ? (
+                <div className="space-y-4">
+                  <p className="text-lg text-gray-600">
+                    Welcome! Let's get you set up.
                   </p>
-                  <p className="text-sm text-gray-600">
-                    User ID: {user.id}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
+                    <p className="text-blue-800 text-sm">
+                      Please complete the onboarding process to access all features.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <p className="text-lg text-gray-600">
+                    Hello, {user.email}! You're successfully signed in.
                   </p>
+                  <div className="bg-white shadow rounded-lg p-6 max-w-md mx-auto">
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      Your Account
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      Email: {user.email}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      User ID: {user.id}
+                    </p>
+                  </div>
+                  <div className="flex justify-center">
+                    <GoogleConnect />
+                  </div>
                 </div>
-                <div className="flex justify-center">
-                  <GoogleConnect />
-                </div>
-              </div>
+              )
             ) : (
               <div className="space-y-4">
                 <p className="text-lg text-gray-600">
@@ -89,6 +109,11 @@ export default function Home() {
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
+      />
+      
+      <OnboardingModal
+        isOpen={!!needsOnboarding}
+        onComplete={handleOnboardingComplete}
       />
     </div>
   )
