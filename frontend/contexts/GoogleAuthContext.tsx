@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect } from 'react'
 import { loadGoogleAPI, initializeGoogleClient } from '@/lib/google-client'
+import { submitGoogleToken } from '@/lib/api'
 
 interface GoogleTokens {
   access_token: string
@@ -28,6 +29,8 @@ interface GoogleAuthContextType {
   signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
   hasScope: (scope: string) => boolean
+  refreshTokens: () => Promise<void>
+  isRefreshingTokens: boolean
 }
 
 const GoogleAuthContext = createContext<GoogleAuthContextType | undefined>(undefined)
@@ -46,6 +49,7 @@ export function GoogleAuthProvider({ children }: { children: React.ReactNode }) 
   const [isLoading, setIsLoading] = useState(false)
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isRefreshingTokens, setIsRefreshingTokens] = useState(false)
 
   useEffect(() => {
     const initGoogle = async () => {
@@ -136,6 +140,25 @@ export function GoogleAuthProvider({ children }: { children: React.ReactNode }) 
     }
   }
 
+  const sendTokensToBackend = async (googleTokens: GoogleTokens) => {
+    try {
+      // Format tokens to match backend UserToken model
+      const tokenData = {
+        access_token: googleTokens.access_token,
+        refresh_token: googleTokens.refresh_token || '', // Backend expects string, not null
+        scope: googleTokens.scope,
+        token_type: googleTokens.token_type,
+        expiry_date: googleTokens.expiry_date.toString()
+      }
+      
+      await submitGoogleToken(tokenData)
+      console.log('Tokens successfully sent to backend')
+    } catch (error) {
+      console.error('Failed to send tokens to backend:', error)
+      // Don't throw here - we still want the frontend connection to work
+    }
+  }
+
   const signInWithGoogle = async () => {
     setError(null)
     
@@ -179,6 +202,10 @@ export function GoogleAuthProvider({ children }: { children: React.ReactNode }) 
           localStorage.setItem('google_tokens', JSON.stringify(googleTokens))
           
           await loadUserInfo(googleTokens.access_token)
+          
+          // Send tokens to backend
+          await sendTokensToBackend(googleTokens)
+          
           setIsLoading(false)
         },
         error_callback: (error: any) => {
@@ -215,6 +242,27 @@ export function GoogleAuthProvider({ children }: { children: React.ReactNode }) 
     return tokens?.scope.includes(scope) || false
   }
 
+  const refreshTokens = async () => {
+    if (!tokens) {
+      setError('No tokens available to refresh')
+      return
+    }
+
+    setIsRefreshingTokens(true)
+    setError(null)
+
+    try {
+      await sendTokensToBackend(tokens)
+      console.log('Tokens refreshed successfully')
+    } catch (error) {
+      const errorMsg = `Failed to refresh tokens: ${error}`
+      setError(errorMsg)
+      console.error(errorMsg)
+    } finally {
+      setIsRefreshingTokens(false)
+    }
+  }
+
   const value = {
     user,
     tokens,
@@ -224,7 +272,9 @@ export function GoogleAuthProvider({ children }: { children: React.ReactNode }) 
     isGoogleLoaded,
     signInWithGoogle,
     signOut,
-    hasScope
+    hasScope,
+    refreshTokens,
+    isRefreshingTokens
   }
 
   return (

@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Mail, Calendar, AlertCircle, CheckCircle } from 'lucide-react'
+import { Mail, Calendar, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react'
 
 export function GoogleConnect() {
-  const { user, isConnected, isLoading, error, isGoogleLoaded, signInWithGoogle, signOut, hasScope } = useGoogleAuth()
+  const { user, isConnected, isLoading, error, isGoogleLoaded, signInWithGoogle, signOut, hasScope, refreshTokens, isRefreshingTokens } = useGoogleAuth()
 
   const scopeStatus = [
     {
@@ -74,9 +74,29 @@ export function GoogleConnect() {
             })}
           </div>
 
-          <Button onClick={signOut} variant="outline" className="w-full">
-            Disconnect Google
-          </Button>
+          <div className="space-y-2">
+            <Button 
+              onClick={refreshTokens} 
+              variant="outline" 
+              className="w-full"
+              disabled={isRefreshingTokens}
+            >
+              {isRefreshingTokens ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Syncing Tokens...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh Tokens
+                </>
+              )}
+            </Button>
+            <Button onClick={signOut} variant="outline" className="w-full">
+              Disconnect Google
+            </Button>
+          </div>
         </CardContent>
       </Card>
     )
