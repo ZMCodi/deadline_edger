@@ -5,12 +5,11 @@ from typing import Optional, Dict, List, Any
 from fastapi import Body, FastAPI, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from collections import defaultdict
-from models import Task, TaskResponse, Context, UserToken, UserOnboarding
+from backend.models import Task, TaskResponse, Context, UserToken, UserOnboarding, AgentResponse
 from ai_sdk import generate_object, openai
 from dotenv import load_dotenv
-import database.supabase_db as sb
-from models import AgentResponse
-from agent import scrape_webpage_tool, run_tasks_with_agent
+import backend.database.supabase_db as sb
+from backend.agent import scrape_webpage_tool, run_tasks_with_agent
 
 load_dotenv()
 

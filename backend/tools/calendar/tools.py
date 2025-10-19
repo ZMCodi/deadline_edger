@@ -8,7 +8,7 @@ from .calendar_fetch import (
     update_event,
     delete_event
 )
-import database.supabase_db as sb
+import backend.database.supabase_db as sb
 from datetime import datetime
 
 # Hardcoded user ID for testing
