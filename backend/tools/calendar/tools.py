@@ -57,6 +57,92 @@ def get_calendar_events_execute(
         return [{"error": str(e)}]
 
 
+def get_all_calendar_events_execute(
+    max_results_per_calendar: int = 50
+) -> list[dict]:
+    """Get upcoming events from ALL user calendars (batched for performance)"""
+    print(f"🔧 Fetching events from ALL calendars for user: {USER_ID}")
+    try:
+        user_context = sb.get_user_context(USER_ID)
+        token_data = user_context.get("google_token")
+        
+        if not token_data:
+            return [{"error": "User has not connected Google Calendar"}]
+        
+        service = get_calendar_service(token_data)
+        
+        # First, get all calendars
+        calendars = list_calendars(service)
+        print(f"📋 Found {len(calendars)} calendar(s)")
+        
+        if not calendars:
+            return []
+        
+        # Use batch API for parallel fetching
+        from googleapiclient.http import BatchHttpRequest
+        
+        all_events = []
+        calendar_map = {}  # Map request_id to calendar info
+        
+        def callback(request_id, response, exception):
+            """Callback for each batch response"""
+            if exception:
+                print(f"  ⚠️  Error fetching {request_id}: {exception}")
+                return
+            
+            cal_info = calendar_map[request_id]
+            events_data = response.get('items', [])
+            
+            # Format events
+            for event in events_data:
+                formatted_event = {
+                    'id': event['id'],
+                    'summary': event.get('summary', 'No title'),
+                    'description': event.get('description', ''),
+                    'start': event['start'].get('dateTime', event['start'].get('date')),
+                    'end': event['end'].get('dateTime', event['end'].get('date')),
+                    'location': event.get('location', ''),
+                    'attendees': event.get('attendees', []),
+                    'htmlLink': event.get('htmlLink', ''),
+                    'calendar_name': cal_info['name'],
+                    'calendar_id': cal_info['id']
+                }
+                all_events.append(formatted_event)
+        
+        # Create batch request
+        batch = service.new_batch_http_request(callback=callback)
+        
+        # Add all calendar requests to batch
+        time_min = datetime.utcnow()
+        for cal in calendars:
+            cal_id = cal['id']
+            cal_name = cal['summary']
+            request_id = cal_id
+            
+            calendar_map[request_id] = {'id': cal_id, 'name': cal_name}
+            
+            batch.add(
+                service.events().list(
+                    calendarId=cal_id,
+                    timeMin=time_min.isoformat() + 'Z',
+                    maxResults=max_results_per_calendar,
+                    singleEvents=True,
+                    orderBy='startTime'
+                ),
+                request_id=request_id
+            )
+        
+        # Execute all requests in parallel
+        print(f"  🚀 Fetching events from {len(calendars)} calendars in parallel...")
+        batch.execute()
+        
+        print(f"✅ Total events across all calendars: {len(all_events)}")
+        return all_events
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        return [{"error": str(e)}]
+
+
 def search_calendar_events_execute(
     query: str,
     max_results: int = 10,
@@ -197,7 +283,7 @@ list_calendars_tool = tool(
 
 get_calendar_events_tool = tool(
     name="get_calendar_events",
-    description="Get upcoming events from a user's Google Calendar. Returns event details including title, start/end time, location, description, and attendees.",
+    description="Get upcoming events from a single specific calendar. Use get_all_calendar_events instead to see ALL calendars at once.",
     parameters={
         "type": "object",
         "properties": {
@@ -220,6 +306,23 @@ get_calendar_events_tool = tool(
         "required": []
     },
     execute=get_calendar_events_execute
+)
+
+get_all_calendar_events_tool = tool(
+    name="get_all_calendar_events",
+    description="RECOMMENDED: Get upcoming events from ALL user calendars at once. This is the primary tool you should use to understand the user's full schedule across all their calendars (work, personal, etc).",
+    parameters={
+        "type": "object",
+        "properties": {
+            "max_results_per_calendar": {
+                "type": "integer",
+                "description": "Maximum number of events to fetch per calendar",
+                "default": 50
+            }
+        },
+        "required": []
+    },
+    execute=get_all_calendar_events_execute
 )
 
 search_calendar_events_tool = tool(
@@ -355,6 +458,7 @@ delete_calendar_event_tool = tool(
 __all__ = [
     'list_calendars_tool',
     'get_calendar_events_tool',
+    'get_all_calendar_events_tool',
     'search_calendar_events_tool',
     'create_calendar_event_tool',
     'update_calendar_event_tool',

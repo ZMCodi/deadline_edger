@@ -10,7 +10,7 @@ from ai_sdk import generate_object, openai
 from dotenv import load_dotenv
 import database.supabase_db as sb
 from models import AgentResponse
-from agent import scrape_webpage_tool
+from agent import scrape_webpage_tool, run_tasks_with_agent
 
 load_dotenv()
 
@@ -112,20 +112,12 @@ def run_scheduled_tasks(tasks = Body(...)):
         print(f"Running tasks for user {user_id}:")
         context = sb.get_user_context(user_id)
         chats = sb.get_chat_messages(user_id)
-        print(f" - User context: {context}")
-        print(f" - Chat history: {chats}")
-
-        ids = []
-        # this is where we give all tasks to agents + provide tools and knowledge of them
-        # with these toools agent is given goal to get to the end result
-        # also provide context
-        for task in tasks:
-            print(f" - Task: {task}")
-            ids.append(task.get("id"))
-            # ADD YOUR TASK RUNNING LOGIC HERE
-            # run_task(user_id, task, context, chats)
-
-        # mark them as ran
+        
+        # Run all tasks through the agent
+        response = run_tasks_with_agent(user_id, tasks, context, chats)
+        print(f"Agent response: {response['text']}")
+        
+        ids = [task.get("id") for task in tasks]
         sb.mark_tasks_ran(ids)
 
 # Configure OpenRouter as default for all OpenAI calls
