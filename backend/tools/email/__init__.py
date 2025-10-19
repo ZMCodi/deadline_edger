@@ -2,15 +2,11 @@
 Gmail Integration
 """
 
-from backend.tools.email.email_fetcher import (
-    create_credentials_from_token,
-    get_gmail_service,
-    parse_email_body,
-    get_header_value,
-    mail_fetch,
-    get_unread_emails,
-    get_emails_from_sender,
-    search_emails
+from backend.tools.email.tools import (
+    get_unread_emails_tool,
+    get_emails_from_sender_tool,
+    search_emails_tool,
+    send_email_tool
 )
 
 __all__ = [

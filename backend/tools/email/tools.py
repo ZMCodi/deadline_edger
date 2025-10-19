@@ -238,8 +238,6 @@ send_email_tool = tool(
     },
     execute=send_email_execute
 )
-<<<<<<< HEAD
-=======
 
 
 # export all tools
@@ -250,4 +248,3 @@ __all__ = [
     'search_emails_tool',
     'send_email_tool'
 ]
->>>>>>> refs/remotes/origin/orchestrate
