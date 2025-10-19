@@ -1,6 +1,5 @@
 import os
 from typing import Optional
-from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
 from firecrawl import FirecrawlApp
 from dotenv import load_dotenv
@@ -41,8 +40,9 @@ def scrape_url(url: str, only_main_content: bool = True, api_key: Optional[str] 
             "onlyMainContent": only_main_content,
         }
         
-        result = app.scrape_url(url, params=params)
-        print(f"Scrape result for {url}: {result}")
+        result = app.scrape(url, only_main_content=only_main_content, formats=["markdown"])
+        # print(f"Scrape result for {url}: {result}")
+        print(f"{url} scraped successfully.")
         
         # Extract content
         if isinstance(result, dict):
