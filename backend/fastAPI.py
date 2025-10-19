@@ -116,10 +116,12 @@ def run_scheduled_tasks(tasks = Body(...)):
         print(f" - Chat history: {chats}")
 
         ids = []
+        # this is where we give all tasks to agents + provide tools and knowledge of them
+        # with these toools agent is given goal to get to the end result
+        # also provide context
         for task in tasks:
             print(f" - Task: {task}")
             ids.append(task.get("id"))
-
             # ADD YOUR TASK RUNNING LOGIC HERE
             # run_task(user_id, task, context, chats)
 
