@@ -6,7 +6,6 @@ from backend.tools.firecrawl_client import scrape_url
 from backend.tools.calendar import (
     list_calendars_tool,
     get_calendar_events_tool,
-    get_all_calendar_events_tool,
     search_calendar_events_tool,
     create_calendar_event_tool,
     update_calendar_event_tool,
@@ -16,7 +15,8 @@ from backend.tools.email.tools import (
     get_unread_emails_tool,
     get_emails_from_sender_tool,
     search_emails_tool,
-    send_email_tool
+    send_email_tool,
+    mail_fetch
 )
 
 load_dotenv()
@@ -93,8 +93,9 @@ Schedule tasks realistically considering user's actual behavior (procrastination
 
 If you receive a task then is how you should parse them:
 - if it is a WEB task then you should use the scrape_webpage tool to get the content of the url and then use the content to see if you need to schedule the task
-- if it is a EMAIL task then you should use the email_fetch tool to get the emails from the user's inbox and then use the emails to see if you need to schedule the task
-- if it is a TODO task then check if it is already in the calendar for the interval. Only add a new event if it is not already scheduled.
+- if it is a EMAIL task then you should use the get_unread_emails_tool to get the emails from the user's inbox and then use the emails to see if you need to schedule the task
+- if it is a TODO task then check if it is already in the calendar for the interval. Only add a new event if it is not already scheduled. DONT ADD DUPLICATES FOR SAME TASK AT SAME TIME.
+- Make sure events do not overlap unless absolutely necessary.
 
 
 ## WORKFLOW
@@ -137,11 +138,10 @@ NO lengthy explanations. Just actions + warnings.
             search_calendar_events_tool,
             create_calendar_event_tool,
             update_calendar_event_tool,
-            # delete_calendar_event_tool,
-            # get_unread_emails_tool,
-            # get_emails_from_sender_tool,
-            # search_emails_tool,
-            # send_email_tool
+            delete_calendar_event_tool,
+            get_unread_emails_tool,
+            get_emails_from_sender_tool,
+            search_emails_tool,
         ],
         max_steps=10
     )
@@ -149,7 +149,7 @@ NO lengthy explanations. Just actions + warnings.
     # Ensure we always have response text
     response_text = result.text if result.text and result.text.strip() else "✅ Calendar updated successfully."
     print(f"✅ Agent response: {response_text}")
-    print(f"Full response: {result}")
+    print(f"Full reasoning: {result.raw_response}")
     
     return {
         "text": response_text,

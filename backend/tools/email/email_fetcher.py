@@ -106,7 +106,7 @@ def get_header_value(headers, name):
             return header['value']
     return ''
 
-def mail_fetch(service=None, token_data=None, start_date=None, max_results=10, query='in:inbox'):
+def mail_fetch(service=None, token_data=None, start_date=None, max_results=20, query='in:inbox'):
     """
     Fetch emails from Gmail
     

@@ -52,17 +52,19 @@ def _get_authenticated_service(user_id):
 # =================================================================
 
 # --- Layer 2: Wrapper Function ---
-def get_unread_emails_execute(max_results: int = 10):
+def get_unread_emails_execute(max_results: int = 20):
     """
     AI-callable tool to get unread emails.
     Handles user authentication automatically.
     """
     try:
+        print(f"--- Executing get_unread_emails_execute for user {USER_ID} ---")
         # 1. Get user's token from DB and create service
         service = _get_authenticated_service(USER_ID)
         
         # 2. Call the core function (Layer 1)
         emails = get_unread_emails(service=service, max_results=max_results)
+        print(f"Retrieved emails: {[email["subject"] for email in emails]}")
         return emails
 
     except Exception as e:
@@ -79,7 +81,7 @@ get_unread_emails_tool = tool(
             "max_results": {
                 "type": "integer",
                 "description": "The maximum number of unread emails to return.",
-                "default": 10
+                "default": 20
             }
         },
         "required": []
@@ -92,7 +94,7 @@ get_unread_emails_tool = tool(
 # =================================================================
 
 # --- Layer 2: Wrapper Function ---
-def get_emails_from_sender_execute(sender_email: str, max_results: int = 10):
+def get_emails_from_sender_execute(sender_email: str, max_results: int = 20):
     """
     AI-callable tool to get emails from a specific sender.
     Handles user authentication automatically.
@@ -127,7 +129,7 @@ get_emails_from_sender_tool = tool(
             "max_results": {
                 "type": "integer",
                 "description": "The maximum number of emails to return from this sender.",
-                "default": 10
+                "default": 20
             }
         },
         "required": ["sender_email"]
@@ -140,7 +142,7 @@ get_emails_from_sender_tool = tool(
 # =================================================================
 
 # --- Layer 2: Wrapper Function ---
-def search_emails_execute(search_term: str, max_results: int = 10):
+def search_emails_execute(search_term: str, max_results: int = 20):
     """
     AI-callable tool to search emails by a keyword.
     Handles user authentication automatically.
@@ -175,7 +177,7 @@ search_emails_tool = tool(
             "max_results": {
                 "type": "integer",
                 "description": "The maximum number of matching emails to return.",
-                "default": 10
+                "default": 20
             }
         },
         "required": ["search_term"]
