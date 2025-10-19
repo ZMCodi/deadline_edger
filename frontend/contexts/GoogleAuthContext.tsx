@@ -190,6 +190,8 @@ export function GoogleAuthProvider({ children }: { children: React.ReactNode }) 
             return
           }
 
+          console.log('Token response:', tokenResponse)
+
           const googleTokens: GoogleTokens = {
             access_token: tokenResponse.access_token,
             refresh_token: null, // Browser flow doesn't provide refresh tokens

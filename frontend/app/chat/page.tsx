@@ -5,10 +5,13 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { MessageCircleIcon, ArrowLeftIcon } from 'lucide-react'
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet'
+import { MessageCircleIcon, ArrowLeftIcon, ListTodo, Plus } from 'lucide-react'
 import { createTask, chatWithAgent } from '@/lib/api'
 import { ChatMessage } from '@/components/chat/ChatMessage'
 import { ChatInput } from '@/components/chat/ChatInput'
+import { TaskList } from '@/components/tasks/TaskList'
+import { AddTaskDialog } from '@/components/tasks/AddTaskDialog'
 
 import type { AgentResponse } from '@/lib/api'
 
@@ -26,6 +29,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [taskRefreshTrigger, setTaskRefreshTrigger] = useState(0)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -104,10 +108,17 @@ export default function ChatPage() {
     try {
       await createTask(task)
       console.log('Task created successfully:', task.title)
+      // Refresh task list
+      setTaskRefreshTrigger(prev => prev + 1)
     } catch (error) {
       console.error('Failed to create task:', error)
       throw error
     }
+  }
+
+  const handleTaskCreated = () => {
+    // Refresh task list when a task is created via the dialog
+    setTaskRefreshTrigger(prev => prev + 1)
   }
 
   const clearMessages = () => {
@@ -136,6 +147,27 @@ export default function ChatPage() {
               </div>
             </div>
             <div className="flex items-center space-x-2">
+              <AddTaskDialog
+                onTaskCreated={handleTaskCreated}
+                trigger={
+                  <Button variant="ghost" size="sm">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                }
+              />
+              
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <ListTodo className="h-4 w-4" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[400px] p-0">
+                  <SheetTitle className="sr-only">Task Management</SheetTitle>
+                  <TaskList refreshTrigger={taskRefreshTrigger} />
+                </SheetContent>
+              </Sheet>
+
               {messages.length > 0 && (
                 <Button
                   variant="outline"

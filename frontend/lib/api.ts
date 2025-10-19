@@ -188,3 +188,38 @@ export async function createTask(task: TaskCreateRequest): Promise<boolean> {
     throw error
   }
 }
+
+export interface TaskResponse {
+  id_: number
+  type_: 'EMAIL' | 'WEB' | 'TODO'
+  title: string
+  context: {
+    prompt: string
+    priority: string
+    url?: string
+  }
+  period: string
+  last_run_ts: string
+}
+
+export async function getTasks(): Promise<TaskResponse[]> {
+  try {
+    const headers = await getAuthHeaders()
+    
+    const response = await fetch(`${API_BASE_URL}/api/tasks`, {
+      method: 'GET',
+      headers
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Failed to get tasks: ${response.statusText} - ${errorText}`)
+    }
+
+    const data = await response.json()
+    return data as TaskResponse[]
+  } catch (error) {
+    console.error('Error getting tasks:', error)
+    throw error
+  }
+}
