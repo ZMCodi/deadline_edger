@@ -247,7 +247,7 @@ def emails_to_json_string(emails, pretty=True):
         return json.dumps(emails, ensure_ascii=False)
 
 # Example usage with your database
-if _name_ == "_main_":
+if __name__ == "_main_":
     try:
         # Get user's token from database
         user_id = "e6ac7c44-b6d3-465c-9d75-3d44611d0e6c"

@@ -1,9 +1,9 @@
 import os
 from dotenv import load_dotenv
 from ai_sdk import tool, generate_text, openai
-from tools.firecrawl_client import scrape_url
+from backend.tools.firecrawl_client import scrape_url
 #from tools.email_fetcher import mail_fetch
-from tools.calendar import (
+from backend.tools.calendar import (
     list_calendars_tool,
     get_calendar_events_tool,
     get_all_calendar_events_tool,
