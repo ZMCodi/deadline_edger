@@ -31,41 +31,6 @@ The wrapper functions (Layer 2) are responsible for:
 4. Calling the core logic function (Layer 1) with that service.
 """
 
-# Assuming 'tool' comes from your AI SDK, as per the context
-# from ai_sdk import tool
-# For this example, we'll create a placeholder decorator
-def tool(name, description, parameters, execute):
-    """A placeholder for your real 'tool' decorator or function."""
-    # In a real system, this would register the tool
-    print(f"Registering tool: {name}")
-    # We can attach the metadata to the function for good measure
-    execute._tool_metadata = {
-        "name": name,
-        "description": description,
-        "parameters": parameters
-    }
-    return execute
-
-# --- Imports ---
-
-# Import database functions (as per context)
-import backend.database.supabase_db as sb
-
-# Import Layer 1 (Core Functions) from your original file
-# We assume this file is in the same directory (e.g., 'tools/')
-from .email_fetcher import (
-    get_gmail_service,
-    get_unread_emails,
-    get_emails_from_sender,
-    search_emails
-)
-
-# --- User Context ---
-
-# This ID is grabbed from the __main__ block of your emails_fetched.py
-# In a real application, this would come from the user's session or request context.
-USER_ID = "e6ac7c44-b6d3-465c-9d75-3d44611d0e6c"
-
 # --- Helper Function ---
 
 def _get_authenticated_service(user_id):
@@ -75,7 +40,7 @@ def _get_authenticated_service(user_id):
     """
     user_context = sb.get_user_context(user_id)
     token_data = user_context.get("google_token")
-    
+
     if not token_data:
         raise ConnectionError("User is not authenticated with Google.")
         
@@ -99,7 +64,7 @@ def get_unread_emails_execute(max_results: int = 10):
         # 2. Call the core function (Layer 1)
         emails = get_unread_emails(service=service, max_results=max_results)
         return emails
-    
+
     except Exception as e:
         print(f"Error in get_unread_emails_execute: {e}")
         return f"An error occurred while fetching unread emails: {e}"
@@ -273,3 +238,16 @@ send_email_tool = tool(
     },
     execute=send_email_execute
 )
+<<<<<<< HEAD
+=======
+
+
+# export all tools
+
+__all__ = [
+    'get_unread_emails_tool',
+    'get_emails_from_sender_tool',
+    'search_emails_tool',
+    'send_email_tool'
+]
+>>>>>>> refs/remotes/origin/orchestrate
