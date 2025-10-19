@@ -102,13 +102,14 @@ export function TaskList({ refreshTrigger, className }: TaskListProps) {
 
   return (
     <div className={cn('flex flex-col h-full', className)}>
-      <div className="flex items-center justify-between p-4 border-b">
+      <div className="flex items-center pr-10 justify-between gap-3 p-4 border-b shrink-0">
         <h3 className="font-semibold text-lg">Your Tasks</h3>
         <Button
           onClick={fetchTasks}
           variant="ghost"
           size="sm"
           disabled={isLoading}
+          className="shrink-0 "
         >
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -118,7 +119,7 @@ export function TaskList({ refreshTrigger, className }: TaskListProps) {
         </Button>
       </div>
 
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 overflow-y-auto">
         <div className="p-4 space-y-3">
           {isLoading && tasks.length === 0 ? (
             <div className="flex items-center justify-center py-8">
@@ -143,10 +144,10 @@ export function TaskList({ refreshTrigger, className }: TaskListProps) {
                     <div className="flex items-center gap-1 shrink-0">
                       <Badge
                         variant="outline"
-                        className={cn('text-xs px-1 py-0', getTypeColor(task.type_))}
+                        className={cn('text-xs px-1 py-0', getTypeColor(task.type))}
                       >
-                        <span className="mr-1">{getTypeIcon(task.type_)}</span>
-                        {task.type_}
+                        <span className="mr-1">{getTypeIcon(task.type)}</span>
+                        {task.type}
                       </Badge>
                     </div>
                   </div>

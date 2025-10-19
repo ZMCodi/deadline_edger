@@ -33,7 +33,7 @@ export function AddTaskDialog({ onTaskCreated, trigger }: AddTaskDialogProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
-    type_: 'TODO' as 'EMAIL' | 'WEB' | 'TODO',
+    type: 'TODO' as 'EMAIL' | 'WEB' | 'TODO',
     prompt: '',
     priority: 'medium' as 'high' | 'medium' | 'low',
     period: '1 day',
@@ -51,7 +51,7 @@ export function AddTaskDialog({ onTaskCreated, trigger }: AddTaskDialogProps) {
     try {
       await createTask({
         title: formData.title,
-        type_: formData.type_,
+        type: formData.type,
         context: {
           prompt: formData.prompt,
           priority: formData.priority,
@@ -62,7 +62,7 @@ export function AddTaskDialog({ onTaskCreated, trigger }: AddTaskDialogProps) {
 
       setFormData({
         title: '',
-        type_: 'TODO',
+        type: 'TODO',
         prompt: '',
         priority: 'medium',
         period: '1 day',
@@ -109,9 +109,9 @@ export function AddTaskDialog({ onTaskCreated, trigger }: AddTaskDialogProps) {
           <div className="space-y-2">
             <label className="text-sm font-medium">Task Type</label>
             <Select 
-              value={formData.type_} 
+              value={formData.type} 
               onValueChange={(value: 'EMAIL' | 'WEB' | 'TODO') => 
-                setFormData({ ...formData, type_: value })
+                setFormData({ ...formData, type: value })
               }
             >
               <SelectTrigger>

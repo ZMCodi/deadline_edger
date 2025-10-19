@@ -3,7 +3,7 @@ import { createTask } from './api'
 
 interface TaskData {
   title: string
-  type_: 'EMAIL' | 'WEB' | 'TODO'
+  type: 'EMAIL' | 'WEB' | 'TODO'
   context: {
     prompt: string
     priority: string
@@ -145,7 +145,7 @@ export class TaskCalendarService {
     }
 
     // Adjust duration based on task type and priority
-    if (taskData.type_ === 'EMAIL') {
+    if (taskData.type === 'EMAIL') {
       duration = 30 // 30 minutes for email tasks
     } else if (priority === 'high' || priority === 'urgent') {
       duration = 90 // 1.5 hours for high priority tasks
@@ -193,7 +193,7 @@ export class TaskCalendarService {
 
   private formatTaskDescription(taskData: TaskData): string {
     let description = `Task: ${taskData.title}\n\n`
-    description += `Type: ${taskData.type_}\n`
+    description += `Type: ${taskData.type}\n`
     description += `Priority: ${taskData.context.priority}\n`
     description += `Period: ${taskData.period}\n\n`
     description += `Details: ${taskData.context.prompt}\n`

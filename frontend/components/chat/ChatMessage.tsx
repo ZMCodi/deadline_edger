@@ -3,7 +3,7 @@
 import { cn } from '@/lib/utils'
 import { User, Bot } from 'lucide-react'
 import type { AgentResponse } from '@/lib/api'
-import { CalendarEvent } from '@/lib/calendar-service'
+import { InlineTaskSuggestion } from './InlineTaskSuggestion'
 
 interface ChatMessageProps {
   message: {
@@ -12,14 +12,22 @@ interface ChatMessageProps {
     content: string
     timestamp: Date
     agentResponse?: AgentResponse
-    calendarEvent?: CalendarEvent
-    showCalendar?: boolean
   }
+  onCreateTask?: (task: any) => Promise<void>
   className?: string
 }
 
-export function ChatMessage({ message, className }: ChatMessageProps) {
+export function ChatMessage({ message, onCreateTask, className }: ChatMessageProps) {
   const isUser = message.role === 'user'
+  
+  // Log when we have task suggestions to render
+  if (!isUser && message.agentResponse?.type_ === 'create_task' && message.agentResponse.tasks) {
+    console.log('🎨 [ChatMessage] Rendering task suggestions:', {
+      messageId: message.id,
+      taskCount: message.agentResponse.tasks.length,
+      tasks: message.agentResponse.tasks
+    })
+  }
 
   return (
     <div
@@ -48,6 +56,14 @@ export function ChatMessage({ message, className }: ChatMessageProps) {
             {message.content}
           </div>
         </div>
+        
+        {/* Show task suggestions for create_task responses */}
+        {!isUser && message.agentResponse?.type_ === 'create_task' && message.agentResponse.tasks && (
+          <InlineTaskSuggestion 
+            tasks={message.agentResponse.tasks}
+            onCreateTask={onCreateTask}
+          />
+        )}
         <div className={cn(
           'text-xs mt-1.5 px-2',
           isUser ? 'text-right text-gray-400' : 'text-left text-gray-400'
