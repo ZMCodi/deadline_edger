@@ -85,6 +85,12 @@ def chat_with_agent(user_message: str, context_injection: str = None) -> dict:
 ## YOUR JOB
 Schedule tasks realistically considering user's actual behavior (procrastination, energy levels, interruptions).
 
+If you receive a task then is how you should parse them:
+- if it is a WEB task then you should use the scrape_webpage tool to get the content of the url and then use the content to see if you need to schedule the task
+- if it is a EMAIL task then you should use the email_fetch tool to get the emails from the user's inbox and then use the emails to see if you need to schedule the task
+- if it is a TODO task then check if it is already in the calendar and if not then add it to the calendar
+
+
 ## WORKFLOW
 1. Call `get_all_calendar_events` FIRST to see current schedule
 2. Analyze conflicts, capacity, and workload
@@ -98,6 +104,7 @@ Schedule tasks realistically considering user's actual behavior (procrastination
 - Don't overload schedule - be realistic
 - Take action, don't just suggest
 
+# 
 ## OUTPUT FORMAT
 ```
 ✅ Actions: Created X, Updated Y
@@ -160,7 +167,9 @@ def run_tasks_with_agent(user_id: str, tasks: list, user_context: dict, chat_his
         task_desc = f"- {task['title']}: {task['context'].get('prompt', '')} (Priority: {task['context'].get('priority', 'medium')})"
         task_descriptions.append(task_desc)
     
-    user_message = f"""Schedule these tasks:
+    user_message = f"""
+    You are given a list of tasks to schedule/execute  
+
 
 {chr(10).join(task_descriptions)}
 
