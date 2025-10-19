@@ -9,7 +9,7 @@ from .email_fetcher import (
     get_emails_from_sender,
     search_emails
 )
-import database.supabase_db as sb
+import backend.database.supabase_db as sb
 from datetime import datetime
 
 # Hardcoded user ID for testing
@@ -49,7 +49,7 @@ def tool(name, description, parameters, execute):
 # --- Imports ---
 
 # Import database functions (as per context)
-import database.supabase_db as sb
+import backend.database.supabase_db as sb
 
 # Import Layer 1 (Core Functions) from your original file
 # We assume this file is in the same directory (e.g., 'tools/')

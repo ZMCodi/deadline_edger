@@ -22,7 +22,7 @@ class Context(BaseModel):
 class Task(BaseModel):
     context: Context = Field(description="Information about what the task will do")
     period: str = Field(description="How often the task will be run, e.g. 1 hour, 1 day, 1 week")
-    type_: TaskType = Field(description="Type of task to be created")
+    type: TaskType = Field(description="Type of task to be created")
     title: str = Field(description="Title of the task to be executed")
 
 class AgentResponse(BaseModel):

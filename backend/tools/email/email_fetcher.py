@@ -15,7 +15,7 @@ from googleapiclient.discovery import build
 from datetime import datetime
 import base64
 from email.mime.text import MIMEText
-import database.supabase_db as sb
+import backend.database.supabase_db as sb
 import json
 
 

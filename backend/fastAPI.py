@@ -33,7 +33,7 @@ def create_task(
     added_task = sb.add_task(
         title=task.title,
         user_id=user_id,
-        type_=task.type_.value,
+        type_=task.type.value,
         context=task.context.model_dump(mode="json"),
         period=task.period
     )
@@ -41,7 +41,7 @@ def create_task(
     context = sb.get_user_context(user_id)
     chats = sb.get_chat_messages(user_id)
 
-    response = run_tasks_with_agent(user_id, [task], context, chats)
+    response = run_tasks_with_agent(user_id, [task.model_dump(mode="json")], context, chats)
     print(f"Agent response: {response['text']}")
     sb.mark_tasks_ran([added_task['id']])
 

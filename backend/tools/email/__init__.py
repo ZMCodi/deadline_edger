@@ -2,7 +2,7 @@
 Google Calendar Integration
 """
 
-from .tools import (
+from backend.tools.email.email_fetcher import (
     create_credentials_from_token,
     get_gmail_service,
     parse_email_body,

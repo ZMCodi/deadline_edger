@@ -42,6 +42,7 @@ def scrape_url(url: str, only_main_content: bool = True, api_key: Optional[str] 
         }
         
         result = app.scrape_url(url, params=params)
+        print(f"Scrape result for {url}: {result}")
         
         # Extract content
         if isinstance(result, dict):
