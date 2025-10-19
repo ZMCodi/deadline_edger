@@ -2,7 +2,7 @@
 
 **The Todo List on Steroids for High-Agency Procrastinators**
 
-
+[![Home Page](/thumbnail.png)](https://youtu.be/BFaI1cI7j5E)
 
 ## 🚀 Overview
 
