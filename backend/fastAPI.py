@@ -41,9 +41,8 @@ def create_task(
     context = sb.get_user_context(user_id)
     chats = sb.get_chat_messages(user_id)
 
-    # TODO: run the task here
-    # run_task(user_id, task, context, chats)
-
+    response = run_tasks_with_agent(user_id, [task], context, chats)
+    print(f"Agent response: {response['text']}")
     sb.mark_tasks_ran([added_task['id']])
 
 @app.get("/api/tasks", response_model=list[TaskResponse])
