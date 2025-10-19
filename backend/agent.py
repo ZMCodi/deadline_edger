@@ -2,15 +2,43 @@ import os
 from dotenv import load_dotenv
 from ai_sdk import tool, generate_text, openai
 from tools.firecrawl_client import scrape_url
+from tools.email_fetcher import mail_fetch
+from tools.calendar import (
+    list_calendars_tool,
+    get_calendar_events_tool,
+    search_calendar_events_tool,
+    create_calendar_event_tool,
+    update_calendar_event_tool,
+    delete_calendar_event_tool
+)
+import ezgmail
 
 load_dotenv()
 
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CREDENTIALS_PATH = PROJECT_ROOT 
+TOKEN_PATH = os.path.join(PROJECT_ROOT, "token.json")
+
+
+try:
+    ezgmail.init(tokenFile=TOKEN_PATH, credentialsFile=CREDENTIALS_PATH)
+    print(f"✅ EZGmail initialized successfully for: {ezgmail.EMAIL_ADDRESS}")
+except Exception as e:
+    print(f"⚠️  EZGmail initialization failed: {e}")
+    print(f"📍 Looking for credentials in: {CREDENTIALS_PATH}")
+    print(f"📍 Expected files: client_secret_*.json or credentials-sheets.json")
+    print(f"📍 Token file location: {TOKEN_PATH}")
 
 def scrape_webpage_execute(url: str, only_main_content: bool = True) -> str:
     """Scrape a webpage and return its content"""
     print(f"🔧 Scraping: {url}")
     return scrape_url(url, only_main_content)
 
+def email_fetch_execute(start_date: str, max_results: int = 10) -> list[dict]:
+    """Fetch emails from the user's inbox"""
+    print(f"🔧 Fetching emails from {start_date} (max: {max_results})")
+    return mail_fetch(start_date, max_results)
 
 # Define the scraping tool with JSON schema
 scrape_webpage_tool = tool(
@@ -36,114 +64,84 @@ scrape_webpage_tool = tool(
 
 
 def create_agent():
-    """
-    Create an AI agent with Firecrawl scraping capability
-    
-    Required environment variables:
-        - FIRECRAWL_API_KEY: Your Firecrawl API key
-        - OPENROUTER_API_KEY: Your OpenRouter API key
-    
-    Returns:
-        Configured model provider
-    """
-    if not os.getenv("FIRECRAWL_API_KEY"):
-        raise ValueError("FIRECRAWL_API_KEY not found in environment variables")
-    if not os.getenv("OPENROUTER_API_KEY"):
-        raise ValueError("OPENROUTER_API_KEY not found in environment variables")
-    
-    # Set OpenRouter as default for all OpenAI calls
+    """Initialize and return the AI agent with OpenRouter configuration"""
     os.environ["OPENAI_BASE_URL"] = "https://openrouter.ai/api/v1"
     os.environ["OPENAI_API_KEY"] = os.getenv("OPENROUTER_API_KEY")
     
-    return openai
+    # Return a configured model instance
+    model = openai("openai/gpt-4o")
+    return model
 
 
-def chat_with_agent(provider, user_message: str) -> str:
+def chat_with_agent(user_message: str, system_prompt: str = None) -> dict:
     """
-    Send a message to the AI agent using AI SDK
+    Chat with the agent and let it use available tools.
     
     Args:
-        provider: The AI model provider (openai function from ai_sdk)
-        user_message: The user's message
-        
-    Returns:
-        The agent's response
-    """
-    system_prompt = """You are a helpful AI assistant with powerful web scraping capabilities.
-
-Your capabilities:
-- You have access to a scrape_webpage tool that can extract content from any URL
-- You can analyze and summarize web content
-- You can extract specific information from websites
-
-Important instructions:
-- When users ask you to check, visit, analyze, or get information from a URL, ALWAYS use the scrape_webpage function first
-- After scraping, provide a clear, well-structured analysis of the content
-- If asked about specific information on a page, scrape it first, then extract the relevant details
-- You cannot access URLs directly - you MUST use the scraping tool
-- Be thorough in your analysis and provide helpful insights
-- If the content is long, summarize the key points clearly
-
-When responding:
-- Start by acknowledging what you're doing (e.g., "I'll scrape that page for you...")
-- After getting the content, provide a clear and organized response
-- Format your responses in a readable way with bullet points or sections when appropriate"""
+        user_message: The user's message/query
+        system_prompt: Optional system prompt to guide the agent's behavior
     
-
+    Returns:
+        dict with 'text' (response) and 'tool_calls' (list of tools used)
+    """
+    # Set up OpenRouter configuration
     os.environ["OPENAI_BASE_URL"] = "https://openrouter.ai/api/v1"
     os.environ["OPENAI_API_KEY"] = os.getenv("OPENROUTER_API_KEY")
     
+    # Default system prompt if none provided
+    if system_prompt is None:
+        system_prompt = """You are a helpful AI assistant with access to tools that can:
+1. Scrape webpages to extract content from URLs
+2. Fetch emails from the user's inbox
+3. List all user's Google calendars
+4. Get upcoming calendar events
+5. Search calendar events by keyword
+6. Create new calendar events
+7. Update existing calendar events
+8. Delete calendar events
 
-    model = provider("google/gemini-2.5-flash")
+Use these tools when needed to help answer the user's questions or complete their tasks.
+When fetching emails, dates should be in yyyy/mm/dd format.
+When creating/updating calendar events, use ISO datetime format (e.g., '2024-12-25T10:00:00Z' or '2025-10-20T14:30:00-05:00')."""
+    
+    print(f"💬 User: {user_message}")
+    print(f"🤖 Agent thinking...")
     
     result = generate_text(
-        model=model,
+        model=openai("openai/gpt-4o"),
         prompt=user_message,
         system=system_prompt,
-        tools=[scrape_webpage_tool],
+        tools=[
+            scrape_webpage_tool, 
+            list_calendars_tool,
+            get_calendar_events_tool,
+            search_calendar_events_tool,
+            create_calendar_event_tool,
+            update_calendar_event_tool,
+            delete_calendar_event_tool
+        ],
+        max_steps=5 
     )
     
-    return result.text
-
-
-def main():
-    """Run the agent interactively"""
-    print("=" * 60)
-    print("AI Agent with Firecrawl Scraping Tool (Python AI SDK)")
-    print("=" * 60)
+    print(f"✅ Agent response: {result.text}")
     
-    try:
-        provider = create_agent()
-        
-
-        while True:
-            try:
-                user_input = input("You: ").strip()
-                
-                if user_input.lower() in ['exit', 'quit', 'q']:
-                    print("Goodbye!")
-                    break
-                
-                if not user_input:
-                    continue
-                
-                print("\nAgent thinking...")
-                response = chat_with_agent(provider, user_input)
-                print(f"\nAgent: {response}\n")
-                
-            except KeyboardInterrupt:
-                print("\n\nGoodbye!")
-                break
-            except Exception as e:
-                print(f"\nError: {str(e)}\n")
-                import traceback
-                traceback.print_exc()
-    
-    except Exception as e:
-        print(f"\n✗ Error: {e}")
-        import traceback
-        traceback.print_exc()
+    return {
+        "text": result.text,
+        "tool_calls": getattr(result, "tool_calls", []),
+        "steps": getattr(result, "steps", [])
+    }
 
 
+# Example usage
 if __name__ == "__main__":
-    main()
+    # Test the agent with calendar
+    print("🚀 Testing Calendar Agent")
+    print("="*60)
+    
+    response = chat_with_agent(
+        "I'm not going to be getting married on 2025-12-25. Remove this calendar event for it."
+    )
+    print("\n" + "="*60)
+    print("Final Response:")
+    print(response["text"])
+    print("="*60)
